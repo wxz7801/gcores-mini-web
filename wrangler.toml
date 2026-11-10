@@ -1,18 +1,34 @@
-# Cloudflare Pages 本地预览 / 部署配置
+# Cloudflare Workers + 静态资源（Static Assets）部署配置
 #
-# 本地预览：  pnpm --dir apps/web build && npx wrangler pages dev
-# 产物目录由 pages_build_output_dir 指定，wrangler pages dev 会自动读取。
+# 本地预览：  pnpm --dir apps/web build && npx wrangler dev
 #
-# 注意（踩过的坑）：
-#   1. Pages 配置里不能再写 [assets] 段——workers 的 assets 必须提供 directory，
-#      而 Pages 的目录由 pages_build_output_dir 给出，两者混用会直接报错。
-#   2. SPA 回退不要在 apps/web/public/_redirects 里写 `/* /index.html 200`：
-#      html_handling 默认开启时这条会被判为「Infinite loop」而静默忽略。
-#      正确做法是在 Cloudflare Dashboard 的 Pages 项目里设置
-#      Build output directory = apps/web/dist，并依赖 Pages 默认的 SPA 回退
-#      （或在变更为 Workers 架构后用 assets.not_found_handling = "single-page-application"）。
-#      深链 /radio/123、/series/recorder 已实测可直接刷新。
+# 架构：Worker 处理 /gapi/*（同源反向代理到机核），其余全部由 [assets] 直接服务。
+#   - main              : Worker 入口，纯 JS 无构建步骤
+#   - [assets].directory: 前端构建产物
+#   - run_worker_first  : 只有 /gapi/* 先进 Worker，静态资源走零开销快路径
+#   - not_found_handling: SPA 深链（/radio/123）回退到 index.html
+#
+# 为什么不用 Pages 的 pages_build_output_dir：
+#   Cloudflare 的 Workers Builds 执行的是 `npx wrangler deploy`，
+#   它只认 main / [assets]，不认 pages_build_output_dir，
+#   写了会报 `Missing entry-point to Worker script or to assets directory`。
+#
+# 踩过的坑：
+#   1. 不要把 SPA 回退写进 apps/web/public/_redirects（`/* /index.html 200`）：
+#      在 html_handling 默认开启时会被判为「Infinite loop」而静默忽略。
+#      正确做法就是下面的 not_found_handling = "single-page-application"。
+#   2. worker 脚本不要放进 functions/ 目录：那是 Pages Functions 的约定，
+#      Workers 架构下既不会被识别，也不该和 assets 混在一起。
 
 name = "gcores-mini-web"
-pages_build_output_dir = "apps/web/dist"
+main = "worker/index.js"
 compatibility_date = "2026-11-09"
+
+[assets]
+directory = "apps/web/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/gapi/*"]
+
+[observability]
+enabled = true

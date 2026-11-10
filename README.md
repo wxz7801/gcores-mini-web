@@ -23,7 +23,7 @@ pnpm build         # 产物在 apps/web/dist
 pnpm preview
 ```
 
-**上线必须自带反向代理**：机核 API 没有 CORS 头，浏览器直连会被拦。开发环境已经配好 Vite proxy（`/gapi` → `https://www.gcores.com`），生产可用 Cloudflare Pages（仓库自带 `functions/_middleware.js`，见第 5 节）或 Nginx 转发同样路径。
+**上线必须自带反向代理**：机核 API 没有 CORS 头，浏览器直连会被拦。开发环境已经配好 Vite proxy（`/gapi` → `https://www.gcores.com`），生产可用 Cloudflare Workers + 静态资源（仓库自带 `worker/index.js` + `wrangler.toml`，见第 5 节）或 Nginx 转发同样路径。
 
 ---
 
@@ -110,37 +110,55 @@ pnpm preview
 
 机核 API 不返回 `Access-Control-Allow-Origin`，所以浏览器不能直连。两种做法：
 
-### Cloudflare Pages（同源 Pages Function）
+### Cloudflare Workers + 静态资源（Static Assets）
 
-仓库根目录的 `functions/_middleware.js` 把 `/gapi/*` 转发到 `https://www.gcores.com`，和静态资源同域，**不需要额外建 Worker，也不需要配 CORS**。前端 `api/client.ts` 的 `BASE` 本来就是 `/gapi/v1`，同域下开箱即用。
+仓库根目录的 `worker/index.js` 把 `/gapi/*` 转发到 `https://www.gcores.com`，和静态资源同域，**不需要额外服务，也不需要配 CORS**。前端 `api/client.ts` 的 `BASE` 本来就是 `/gapi/v1`，同域下开箱即用。
 
-在 Cloudflare Dashboard → Workers & Pages → Create → Pages → Connect to Git，选本仓库：
+`wrangler.toml` 声明了完整的 Workers 架构，Cloudflare 的 Workers Builds 直接 `npx wrangler deploy` 即可：
+
+```toml
+name = "gcores-mini-web"
+main = "worker/index.js"
+compatibility_date = "2026-11-09"
+
+[assets]
+directory = "apps/web/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"   # SPA 深链回退
+run_worker_first = ["/gapi/*"]                   # 只有 /gapi 进 Worker
+```
+
+在 Cloudflare Dashboard → Workers & Pages → Create → Worker → Connect to Git，选本仓库：
 
 | 配置项 | 值 |
 | --- | --- |
 | Production branch | `main` |
 | Root directory | `apps/web` |
 | Build command | `pnpm build` |
-| Build output directory | `dist` |
-| 环境变量 `NODE_VERSION` | `22` |
 
-根目录的 `wrangler.toml` 只用于本地预览 `npx wrangler pages dev`（`pages_build_output_dir = "apps/web/dist"`）。
+**Deploy command 用默认的 `npx wrangler deploy` 即可**——`main` / `[assets]` 都在根目录的 `wrangler.toml` 里声明了，wrangler 自己会找到。**不要改成 `npx wrangler pages deploy`**，那是 Pages 的路径，装了静态资源绑定的 Worker 会部署失败。
 
-**两个坑（已踩过并实测）**：
+**三个坑（都实际踩过并修复）**：
 
-1. **不要把 SPA 回退写进 `_redirects`**。`/*  /index.html  200` 在默认 `html_handling` 下会被判成 `Infinite loop detected in this rule and has been ignored`，静默失效。Pages 默认行为已经覆盖深链（`/radio/100`、`/series/recorder` 直接刷新实测 200，返回 SPA 外壳）。若将来迁到 Workers 架构，用 `assets.not_found_handling = "single-page-application"` 表达同一件事。
-2. **Pages 配置里不能出现 `[assets]` 段**。workers 的 `assets.directory` 是必填，和 Pages 的 `pages_build_output_dir` 混用会让 `wrangler pages dev` 直接报 `The 'assets' property ... missing the required 'directory' property`。
+1. **`Missing entry-point to Worker script or to assets directory`**：这是本项目第一次部署时的真实报错。Cloudflare 执行 `npx wrangler deploy`，但当时的 `wrangler.toml` 只有 Pages 用的 `pages_build_output_dir`——`wrangler deploy` 不认这个字段，只认 `main` 和 `[assets].directory`。配置改成上面的 Workers 结构后解决。
+2. **不要把 SPA 回退写进 `_redirects`**。`/*  /index.html  200` 在默认 `html_handling` 下会被判成 `Infinite loop detected in this rule and has been ignored`，静默失效。Workers 架构下用 `assets.not_found_handling = "single-page-application"` 表达，深浅链都已实测。
+3. **不能用 `functions/` 目录**。那是 Pages Functions 的约定，Workers 架构下不会被识别；逻辑放在 `worker/index.js`，用 `main` 声明。
 
 代理层已经处理的细节：剥掉浏览器带来的 `Origin` / `Referer` 并替换成 `https://www.gcores.com`（否则上游按跨域处理）；剥掉 `cf-connecting-ip`、`x-forwarded-*` 等边缘注入头；响应侧剥掉上游的 `access-control-*`、`content-encoding`、`content-length`、`set-cookie` 并重新计算；`redirect: 'manual'`，上游 302 的绝对地址改写为同源相对路径，避免把登录页 HTML 当 JSON 返回。
 
-本地验证（会真实连机核 API）：
+本地验证（`wrangler dev`，会真实连机核 API）：
 
 ```bash
 pnpm --dir apps/web build
-npx wrangler pages dev          # http://127.0.0.1:8788
-curl -s -o /dev/null -w '%{http_code}\n' 'http://127.0.0.1:8788/gapi/v1/radios?page%5Blimit%5D=1'   # 200
-curl -s -o /dev/null -w '%{http_code}\n' 'http://127.0.0.1:8788/radio/100'                           # 200（SPA 外壳）
+npx wrangler dev                # http://127.0.0.1:8787
+B=http://127.0.0.1:8787; N='Sec-Fetch-Mode: navigate'
+curl -s -o /dev/null -w '%{http_code}\n' $B/                                              # 200 首页
+curl -s -o /dev/null -w '%{http_code}\n' -H "$N" $B/radio/100                             # 200 SPA 外壳
+curl -s -D- -o /dev/null "$B/gapi/v1/radios?page%5Blimit%5D=1" | grep -i content-type      # application/vnd.api+json
+curl -s -o /dev/null -w '%{http_code}\n' $B/gapi/v1/radios/99999999                       # 404 上游透传
 ```
+
+深链回退依赖 `Sec-Fetch-Mode: navigate`（浏览器发真实导航请求时会自动带上）。用 curl 验证时务必加这个头，否则会拿到 404。
 
 ### Nginx
 
