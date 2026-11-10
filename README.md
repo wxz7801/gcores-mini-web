@@ -23,7 +23,7 @@ pnpm build         # 产物在 apps/web/dist
 pnpm preview
 ```
 
-**上线必须自带反向代理**：机核 API 没有 CORS 头，浏览器直连会被拦。开发环境已经配好 Vite proxy（`/gapi` → `https://www.gcores.com`），生产用 Nginx / Cloudflare Worker 转发同样路径即可，见第 5 节。
+**上线必须自带反向代理**：机核 API 没有 CORS 头，浏览器直连会被拦。开发环境已经配好 Vite proxy（`/gapi` → `https://www.gcores.com`），生产可用 Cloudflare Pages（仓库自带 `functions/_middleware.js`，见第 5 节）或 Nginx 转发同样路径。
 
 ---
 
@@ -109,6 +109,38 @@ pnpm preview
 ## 5. 部署：反向代理
 
 机核 API 不返回 `Access-Control-Allow-Origin`，所以浏览器不能直连。两种做法：
+
+### Cloudflare Pages（同源 Pages Function）
+
+仓库根目录的 `functions/_middleware.js` 把 `/gapi/*` 转发到 `https://www.gcores.com`，和静态资源同域，**不需要额外建 Worker，也不需要配 CORS**。前端 `api/client.ts` 的 `BASE` 本来就是 `/gapi/v1`，同域下开箱即用。
+
+在 Cloudflare Dashboard → Workers & Pages → Create → Pages → Connect to Git，选本仓库：
+
+| 配置项 | 值 |
+| --- | --- |
+| Production branch | `main` |
+| Root directory | `apps/web` |
+| Build command | `pnpm build` |
+| Build output directory | `dist` |
+| 环境变量 `NODE_VERSION` | `22` |
+
+根目录的 `wrangler.toml` 只用于本地预览 `npx wrangler pages dev`（`pages_build_output_dir = "apps/web/dist"`）。
+
+**两个坑（已踩过并实测）**：
+
+1. **不要把 SPA 回退写进 `_redirects`**。`/*  /index.html  200` 在默认 `html_handling` 下会被判成 `Infinite loop detected in this rule and has been ignored`，静默失效。Pages 默认行为已经覆盖深链（`/radio/100`、`/series/recorder` 直接刷新实测 200，返回 SPA 外壳）。若将来迁到 Workers 架构，用 `assets.not_found_handling = "single-page-application"` 表达同一件事。
+2. **Pages 配置里不能出现 `[assets]` 段**。workers 的 `assets.directory` 是必填，和 Pages 的 `pages_build_output_dir` 混用会让 `wrangler pages dev` 直接报 `The 'assets' property ... missing the required 'directory' property`。
+
+代理层已经处理的细节：剥掉浏览器带来的 `Origin` / `Referer` 并替换成 `https://www.gcores.com`（否则上游按跨域处理）；剥掉 `cf-connecting-ip`、`x-forwarded-*` 等边缘注入头；响应侧剥掉上游的 `access-control-*`、`content-encoding`、`content-length`、`set-cookie` 并重新计算；`redirect: 'manual'`，上游 302 的绝对地址改写为同源相对路径，避免把登录页 HTML 当 JSON 返回。
+
+本地验证（会真实连机核 API）：
+
+```bash
+pnpm --dir apps/web build
+npx wrangler pages dev          # http://127.0.0.1:8788
+curl -s -o /dev/null -w '%{http_code}\n' 'http://127.0.0.1:8788/gapi/v1/radios?page%5Blimit%5D=1'   # 200
+curl -s -o /dev/null -w '%{http_code}\n' 'http://127.0.0.1:8788/radio/100'                           # 200（SPA 外壳）
+```
 
 ### Nginx
 

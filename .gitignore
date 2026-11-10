@@ -7,5 +7,8 @@ release/
 .DS_Store
 apps/*/dist/
 apps/*/node_modules/
+# wrangler 本地状态（wrangler pages dev / wrangler dev 生成）
+.wrangler/
+.dev.vars
 pnpm-lock.yaml.bak
 *.log
