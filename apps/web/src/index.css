@@ -1,0 +1,128 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-ink: #0f1115;
+  --color-panel: #15181e;
+  --color-card: #20242c;
+  --color-line: #2c313c;
+  --color-gcores: #ff3e4d;
+  --color-timeline: #f5c542;
+  --font-sans: -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
+}
+
+:root {
+  /* 横屏左侧禁区宽度，竖屏为 0。竖屏禁区：只要不点左侧 1/4 即可，
+     横屏需要给舞台区让位。 */
+  --dead-zone: 0px;
+  color-scheme: dark;
+}
+
+@media (min-width: 900px) and (orientation: landscape) {
+  :root {
+    --dead-zone: clamp(280px, 32vw, 460px);
+  }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: var(--color-ink);
+  color: #e8eaef;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+/* 竖屏禁止横滑回退手势，保留列表内部横向滚动 */
+body {
+  overscroll-behavior-x: contain;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input,
+textarea {
+  user-select: text;
+}
+
+/* 触控目标最小尺寸 */
+.tap {
+  min-width: 48px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 触屏「视觉小、热区大」：在任何视口下都把热区撑到 44px 见方，
+   但不用改到每个组件里——绝对定位的伪元素不吃布局，放大不挤排版。
+   图片右侧会覆盖一层播放热区（透明 click 层），所以这里只放大按钮与链接的命中区，
+   真正叠在图层里的小圆钮（卡片播放/＋）由各自组件显式给足 44px。 */
+button,
+a[role='button'],
+[role='button'] {
+  position: relative;
+}
+button::after,
+a[role='button']::after,
+[role='button']::after {
+  content: '';
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+  /* 不接事件：只是把命中盒撑大，点击仍落到按钮本身 */
+  pointer-events: none;
+}
+/* 整块可点的卡片（<button> 里包着 <article>）不需要额外撑大 */
+button.block::after {
+  display: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+/* 横屏舞台区：容器本身不可点，只有内部显式标了 .stage-interactive 的元素接收事件 */
+.dead-zone {
+  pointer-events: none;
+}
+.dead-zone .stage-interactive {
+  pointer-events: auto;
+}
+
+/* 调试：把禁区用黄色斜纹标出来，body 上加 data-debug-zone 即可 */
+[data-debug-zone] .dead-zone {
+  background-image: repeating-linear-gradient(45deg, rgba(245, 197, 66, 0.12) 0 3px, transparent 3px 8px);
+  outline: 1px dashed rgba(245, 197, 66, 0.4);
+  outline-offset: -1px;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise 0.18s ease-out;
+}
+/* 图片加载完成后淡入：原图 URL 很大会先显示一条像素，直接出现会跳一下 */
+img.img-ready {
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+img.img-ready.img-loaded {
+  opacity: 1;
+}

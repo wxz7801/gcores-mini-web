@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 640" font-family="sans-serif">
+<rect width="740" height="640" fill="#0f1115"/>
+<!-- 手机 1：播客首页 -->
+<g transform="translate(20,20)">
+<rect width="320" height="600" rx="28" fill="#15181e" stroke="#2c313c"/>
+<text x="18" y="54" fill="#fff" font-size="22" font-weight="700">播客</text>
+<g stroke="#e8eaef" stroke-width="2.2" fill="none"><line x1="236" y1="38" x2="254" y2="38"/><line x1="236" y1="45" x2="254" y2="45"/><line x1="236" y1="52" x2="254" y2="52"/><circle cx="286" cy="44" r="7"/><line x1="291" y1="49" x2="297" y2="55"/></g>
+<g font-size="12"><rect x="16" y="72" width="48" height="30" rx="15" fill="#ff3e4d"/><text x="28" y="92" fill="#fff">全部</text>
+<rect x="70" y="72" width="70" height="30" rx="15" fill="#20242c"/><text x="81" y="92" fill="#cfd3da">免费节目</text>
+<rect x="146" y="72" width="58" height="30" rx="15" fill="#20242c"/><text x="157" y="92" fill="#cfd3da">有声书</text>
+<rect x="210" y="72" width="70" height="30" rx="15" fill="#20242c"/><text x="221" y="92" fill="#cfd3da">会员节目</text>
+<rect x="286" y="72" width="34" height="30" rx="15" fill="#20242c"/><text x="296" y="92" fill="#cfd3da">机</text></g>
+<rect x="16" y="114" width="288" height="72" rx="14" fill="#2c2f5a"/>
+<rect x="24" y="122" width="56" height="56" rx="10" fill="#4b4f8f"/>
+<text x="90" y="144" fill="#fff" font-size="12" font-weight="700">新节目提前体验：录音笔 VOL.821</text>
+<text x="90" y="166" fill="#a6a9cf" font-size="10">来自 会员专享</text>
+<circle cx="282" cy="160" r="14" fill="#e8eaef"/><path d="M278 153 L288 160 L278 167 Z" fill="#2c2f5a"/>
+<g font-size="10" fill="#aab" text-anchor="middle">
+<circle cx="46" cy="222" r="20" fill="#5a1f27"/><text x="46" y="226" fill="#fff" font-size="9">FM</text><text x="46" y="256">机核 FM</text>
+<circle cx="110" cy="222" r="20" fill="#2a2e37"/><text x="110" y="256">Gadio</text>
+<circle cx="174" cy="222" r="20" fill="#2a2e37"/><text x="174" y="256">录音笔</text>
+<circle cx="238" cy="222" r="20" fill="#2a2e37"/><text x="238" y="256">核电波</text>
+<circle cx="290" cy="222" r="20" fill="#2a2e37"/><path d="M283 219 L290 226 L297 219" stroke="#e8eaef" stroke-width="2" fill="none"/><text x="290" y="256">展开</text></g>
+<text x="16" y="290" fill="#fff" font-size="14" font-weight="700">GPASS 会员</text><text x="304" y="290" fill="#8a92a3" font-size="11" text-anchor="end">查看更多</text>
+<rect x="16" y="302" width="110" height="110" rx="12" fill="#5a3f9a"/><rect x="136" y="302" width="110" height="110" rx="12" fill="#8a1c22"/><rect x="256" y="302" width="64" height="110" rx="12" fill="#3a2a2a"/>
+<g font-size="10" fill="#e8eaef"><text x="16" y="428">SPEC｜《游戏帝国》</text><text x="136" y="428">SPEC｜地下城主的魔物书</text></g>
+<text x="16" y="458" fill="#fff" font-size="14" font-weight="700">最新节目</text>
+<rect x="16" y="470" width="52" height="52" rx="10" fill="#2e3542"/>
+<rect x="78" y="476" width="150" height="9" rx="4" fill="#d8dbe2"/><rect x="78" y="492" width="100" height="7" rx="3" fill="#5c6371"/><rect x="78" y="506" width="60" height="7" rx="3" fill="#3e4450"/>
+<circle cx="284" cy="496" r="18" fill="none" stroke="#ff3e4d" stroke-width="2"/><path d="M280 489 L290 496 L280 503 Z" fill="#ff3e4d"/>
+<rect x="8" y="532" width="304" height="0" />
+<rect x="0" y="528" width="320" height="72" fill="#1b1f27"/>
+<rect x="0" y="528" width="320" height="2" fill="#2c313c"/><rect x="0" y="528" width="118" height="2" fill="#ff3e4d"/>
+<rect x="12" y="536" width="0" height="0"/>
+<g font-size="10" text-anchor="middle">
+<rect x="22" y="550" width="20" height="18" rx="4" fill="none" stroke="#8a92a3" stroke-width="2"/><text x="32" y="584" fill="#8a92a3">首页</text>
+<circle cx="96" cy="559" r="10" fill="none" stroke="#8a92a3" stroke-width="2"/><text x="96" y="584" fill="#8a92a3">栏目</text>
+<circle cx="160" cy="559" r="12" fill="#ff3e4d"/><path d="M156 553 L166 559 L156 565 Z" fill="#fff"/><text x="160" y="584" fill="#ff3e4d">播放中</text>
+<rect x="216" y="550" width="16" height="18" rx="2" fill="none" stroke="#8a92a3" stroke-width="2"/><text x="224" y="584" fill="#8a92a3">有声书</text>
+<circle cx="288" cy="559" r="10" fill="none" stroke="#8a92a3" stroke-width="2"/><text x="288" y="584" fill="#8a92a3">我的</text></g>
+</g>
+<!-- 手机 2：播放页（时间轴信息流 + 底部播放面板） -->
+<g transform="translate(400,20)">
+<rect width="320" height="600" rx="28" fill="#15181e" stroke="#2c313c"/>
+<rect x="104" y="30" width="112" height="32" rx="16" fill="#20242c"/><text x="160" y="51" fill="#5aa9ff" font-size="12" text-anchor="middle">返回当前播放</text>
+<path d="M290 38 L290 52 M284 44 L290 38 L296 44 M282 48 L282 56 L298 56 L298 48" stroke="#e8eaef" stroke-width="2" fill="none"/>
+<rect x="16" y="76" width="288" height="54" rx="14" fill="#1e2229"/>
+<text x="34" y="100" fill="#8a92a3" font-size="11">……为您讲述世界游戏发行商巨头的</text><text x="34" y="118" fill="#8a92a3" font-size="11">传奇成长史，加入 GPASS 即刻收听！</text>
+<rect x="16" y="142" width="136" height="32" rx="16" fill="#262b35"/><circle cx="32" cy="158" r="12" fill="#fff"/><path d="M29 152 L37 158 L29 164 Z" fill="#15181e"/><text x="52" y="163" fill="#fff" font-size="12">欢迎收听</text><text x="110" y="163" fill="#cfd3da" font-size="11">00:48</text>
+<rect x="16" y="180" width="288" height="190" rx="14" fill="#1e2229"/>
+<rect x="16" y="180" width="288" height="112" rx="14" fill="#d9dbe0"/><rect x="16" y="278" width="288" height="14" fill="#d9dbe0"/>
+<rect x="110" y="190" width="100" height="92" fill="#f4f4f6"/><text x="160" y="240" fill="#334" font-size="10" text-anchor="middle">时间轴配图</text>
+<text x="34" y="318" fill="#fff" font-size="13" font-weight="700">欢迎收听</text>
+<text x="34" y="340" fill="#aab" font-size="11">欢迎本期电台节目，本期电台主题为：</text><text x="34" y="356" fill="#aab" font-size="11">《聊一聊什么是垄断？》</text>
+<rect x="0" y="384" width="320" height="216" rx="20" fill="#1b1f27"/>
+<rect x="140" y="394" width="40" height="5" rx="3" fill="#4a505c"/>
+<text x="20" y="428" fill="#aab" font-size="11">00:09</text><text x="300" y="428" fill="#aab" font-size="11" text-anchor="end">100:06</text>
+<rect x="62" y="422" width="198" height="4" rx="2" fill="#3a3f4a"/><circle cx="68" cy="424" r="9" fill="#fff"/>
+<g fill="#f5c542"><rect x="74" y="430" width="2" height="5"/><rect x="120" y="430" width="2" height="5"/><rect x="170" y="430" width="2" height="5"/><rect x="230" y="430" width="2" height="5"/></g>
+<g fill="#e8eaef" text-anchor="middle" font-size="11">
+<circle cx="36" cy="474" r="15" fill="none" stroke="#e8eaef" stroke-width="2"/><text x="36" y="478">15</text>
+<path d="M92 474 L104 465 L104 483 Z M80 474 L92 465 L92 483 Z" fill="#6b7280"/>
+<circle cx="160" cy="474" r="28" fill="#ff3e4d"/><path d="M152 460 L174 474 L152 488 Z" fill="#fff"/>
+<path d="M228 474 L216 465 L216 483 Z M240 474 L228 465 L228 483 Z" fill="#6b7280"/>
+<circle cx="284" cy="474" r="15" fill="none" stroke="#e8eaef" stroke-width="2"/><text x="284" y="478">15</text></g>
+<g fill="#cfd3da" font-size="10" text-anchor="middle">
+<text x="40" y="530">1844</text><text x="40" y="560" font-size="12">👍</text>
+<text x="100" y="560" font-size="12">1.25×</text>
+<text x="160" y="530">563</text><text x="160" y="560" font-size="12">💬</text>
+<g stroke="#cfd3da" stroke-width="2"><line x1="210" y1="550" x2="230" y2="550"/><line x1="210" y1="556" x2="230" y2="556"/><line x1="210" y1="562" x2="230" y2="562"/></g>
+<path d="M272 552 L282 562 L292 552" stroke="#cfd3da" stroke-width="2.4" fill="none"/></g>
+<text x="160" y="588" fill="#6b7280" font-size="9" text-anchor="middle">点赞 · 倍速 · 评论 · 列表 · 收起</text>
+</g>
+</svg>

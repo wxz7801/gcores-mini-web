@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" font-family="sans-serif">
+<defs><pattern id="h" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="8" fill="#f5c542" opacity=".1"/></pattern></defs>
+<rect width="960" height="560" fill="#0f1115"/>
+<rect x="20" y="20" width="920" height="520" rx="24" fill="#15181e" stroke="#2c313c"/>
+<rect x="20" y="20" width="320" height="520" rx="24" fill="#1b1f27"/>
+<rect x="20" y="20" width="320" height="520" rx="24" fill="url(#h)"/>
+<line x1="340" y1="40" x2="340" y2="520" stroke="#f5c542" stroke-opacity=".35" stroke-dasharray="4 4"/>
+<text x="180" y="78" fill="#fff" font-size="18" font-weight="700" text-anchor="middle">用机核 App 扫码登录</text>
+<rect x="70" y="104" width="220" height="220" rx="16" fill="#fff"/>
+<g fill="#111"><rect x="86" y="120" width="48" height="48"/><rect x="226" y="120" width="48" height="48"/><rect x="86" y="260" width="48" height="48"/>
+<rect x="150" y="130" width="12" height="12"/><rect x="170" y="150" width="12" height="12"/><rect x="190" y="130" width="12" height="12"/><rect x="150" y="190" width="12" height="12"/><rect x="180" y="200" width="24" height="12"/><rect x="220" y="190" width="12" height="24"/><rect x="250" y="230" width="12" height="12"/><rect x="160" y="240" width="12" height="24"/><rect x="200" y="260" width="24" height="12"/><rect x="240" y="280" width="24" height="12"/><rect x="100" y="200" width="24" height="12"/></g>
+<g fill="#fff"><rect x="94" y="128" width="32" height="32"/><rect x="234" y="128" width="32" height="32"/><rect x="94" y="268" width="32" height="32"/></g>
+<g fill="#111"><rect x="102" y="136" width="16" height="16"/><rect x="242" y="136" width="16" height="16"/><rect x="102" y="276" width="16" height="16"/></g>
+<text x="180" y="356" fill="#cbd" font-size="12" text-anchor="middle">打开机核 App →「我的」→ 左上角扫码</text>
+<text x="180" y="378" fill="#8a92a3" font-size="11" text-anchor="middle">有效期 10 分钟 · 每 5 秒自动检查</text>
+<rect x="76" y="404" width="208" height="40" rx="20" fill="#20242c"/><text x="180" y="429" fill="#3ecf8e" font-size="12" text-anchor="middle">● 扫码成功，请在手机上确认</text>
+<text x="180" y="500" fill="#f5c542" font-size="10" text-anchor="middle" opacity=".8">二维码只需被扫描，不需要点按</text>
+<text x="380" y="78" fill="#fff" font-size="22" font-weight="700">登录机核账号</text>
+<text x="380" y="102" fill="#8a92a3" font-size="12">登录后可收听 GPASS 节目与已兑换的有声书</text>
+<text x="380" y="164" fill="#e8eaef" font-size="14">或使用手机号 + 密码登录</text>
+<rect x="380" y="194" width="520" height="56" rx="14" fill="#20242c"/><text x="400" y="228" fill="#6b7280" font-size="14">手机号</text>
+<rect x="380" y="262" width="520" height="56" rx="14" fill="#20242c"/><text x="400" y="296" fill="#6b7280" font-size="14">密码</text><text x="880" y="296" fill="#8a92a3" font-size="12" text-anchor="end">显示</text>
+<rect x="380" y="338" width="520" height="56" rx="28" fill="#ff3e4d"/><text x="640" y="372" fill="#fff" font-size="16" text-anchor="middle">登录</text>
+<rect x="700" y="412" width="200" height="44" rx="22" fill="#20242c"/><text x="800" y="439" fill="#e8eaef" font-size="13" text-anchor="middle">↻ 刷新二维码</text>
+<text x="380" y="488" fill="#8a92a3" font-size="11">短信验证码登录依赖网易易盾人机验证，第一版不提供；</text>
+<text x="380" y="506" fill="#8a92a3" font-size="11">微信 / 微博 / Apple 登录的回调域名绑定 gcores.com，无法接入。</text>
+</svg>

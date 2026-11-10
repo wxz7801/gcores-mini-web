@@ -1,0 +1,685 @@
+import { request, requestWithBody, type JsonApiDoc, type JsonApiResource, type Query } from './client'
+import { getAuth } from './auth'
+
+// ---------- 类型：只列出我们会用到的字段 ----------
+
+export interface RadioAttrs {
+  title: string
+  desc: string | null
+  summary: string | null
+  duration: number
+  cover: string
+  thumb: string
+  'published-at': number
+  'likes-count': number
+  'comments-count': number
+  plays: number
+  'is-free': boolean
+  'is-require-privilege': boolean
+  'is-fm'?: boolean
+  'media-type'?: string | null
+  content?: unknown
+}
+
+export interface MediaAttrs {
+  'media-type': 'audio' | 'protected_audio' | string
+  audio?: string | null
+  'radio-uuid'?: string | null
+}
+
+export interface TimelineAttrs {
+  at: number
+  title: string
+  content: string | null
+  quote?: string | null
+  asset?: string | null
+}
+
+export interface CategoryAttrs {
+  name: string
+  'bg-color'?: string
+  'text-color'?: string
+  logo?: string | null
+  background?: string | null
+  'display-order'?: number
+  /** original = 站内原创栏目；imported = 入驻播客（RSS 导入） */
+  scope?: string
+}
+
+export interface DjAttrs {
+  nickname: string
+  thumb?: string | null
+}
+
+export interface AlbumAttrs {
+  title: string
+  desc?: string | null
+  cover: string
+  'display-type': 'audiobook' | 'album' | string
+  'is-free': boolean
+  'is-require-privilege': boolean
+  credit: number
+  'chapters-count'?: number
+  'radios-count'?: number
+  'published-at'?: number
+  'owner-type'?: string
+  'subscriptions-count'?: number
+  description?: string
+  author?: string | null
+  background?: string | null
+}
+
+// ---------- 播客列表 ----------
+
+export interface RadioListItem {
+  id: string
+  title: string
+  desc: string
+  cover: string
+  thumb: string
+  duration: number
+  publishedAt: number
+  likes: number
+  comments: number
+  plays: number
+  isFree: boolean
+  isRequirePrivilege: boolean
+  /** audio=直链 mp3/m4a；hls=机核 FM 的 m3u8 分片流 */
+  playbackType: 'file' | 'hls'
+  isFm: boolean
+  /** 入驻播客（RSS 导入的第三方播客），对应栏目「入驻播客」 */
+  isImported: boolean
+  /** 时间轴挂在 media 上，需要这个 id 才能取 */
+  mediaId: string | null
+  /** media.audio 原值：免费节目直接用它播，不必再拉一次详情 */
+  audioFile: string | null
+  categories: { id: string; name: string }[]
+  djs: { id: string; nickname: string; avatar: string | null }[]
+}
+
+function toRadioItem(r: JsonApiResource<RadioAttrs>, included: JsonApiResource[]): RadioListItem {
+  const rel = r.relationships ?? {}
+  // 注意：category 是单个对象关系，djs 是数组关系，两者形状不同
+  const catRef = rel.category?.data as { id: string } | { id: string }[] | null | undefined
+  const catIds = (Array.isArray(catRef) ? catRef : catRef ? [catRef] : []).map((x) => x.id)
+  const djRef = rel.djs?.data as { id: string } | { id: string }[] | null | undefined
+  const djIds = (Array.isArray(djRef) ? djRef : djRef ? [djRef] : []).map((x) => x.id)
+  const lookup = new Map(included.map((x) => [`${x.type}:${x.id}`, x]))
+  const mediaRef = rel.media?.data as { id: string } | { id: string }[] | null | undefined
+  const mediaId = Array.isArray(mediaRef) ? mediaRef[0]?.id : mediaRef?.id
+  return {
+    id: r.id,
+    title: r.attributes.title,
+    desc: r.attributes.desc ?? r.attributes.summary ?? '',
+    cover: r.attributes.cover,
+    thumb: r.attributes.thumb,
+    duration: r.attributes.duration,
+    publishedAt: r.attributes['published-at'],
+    likes: r.attributes['likes-count'] ?? 0,
+    comments: r.attributes['comments-count'] ?? 0,
+    plays: r.attributes.plays ?? 0,
+    isFree: r.attributes['is-free'],
+    isRequirePrivilege: r.attributes['is-require-privilege'],
+    playbackType: r.attributes['is-fm'] ? 'hls' : 'file',
+    isFm: Boolean(r.attributes['is-fm']),
+    isImported: catIds.some((id) => (lookup.get(`categories:${id}`)?.attributes.name as string) === '入驻播客'),
+    mediaId: mediaId ?? null,
+    audioFile: (lookup.get(`medias:${mediaId}`)?.attributes as MediaAttrs | undefined)?.audio ?? null,
+    categories: catIds.map((id) => {
+      const c = lookup.get(`categories:${id}`)
+      return { id, name: (c?.attributes.name as string) ?? '' }
+    }),
+    djs: djIds.map((id) => {
+      const u = lookup.get(`users:${id}`)
+      return {
+        id,
+        nickname: (u?.attributes.nickname as string) ?? '',
+        avatar: (u?.attributes.thumb as string) ?? null,
+      }
+    }),
+  }
+}
+
+export interface RadioPage {
+  items: RadioListItem[]
+  total: number
+}
+
+export async function fetchRadios(opts: {
+  offset?: number
+  limit?: number
+  categoryId?: string
+  userId?: string
+  isFm?: boolean
+  sort?: string
+}): Promise<RadioPage> {
+  const params: Query = {
+    'page[limit]': opts.limit ?? 20,
+    'page[offset]': opts.offset ?? 0,
+    sort: opts.sort ?? '-published-at',
+    // 需要 media：一是免费音频的文件名，二是时间轴要按 media id 去取
+    include: 'category,djs,media',
+  }
+  if (opts.categoryId) {
+    const doc = await request<JsonApiDoc<RadioAttrs>>(`/categories/${opts.categoryId}/radios`, { params })
+    const included = doc.included ?? []
+    const arr = Array.isArray(doc.data) ? doc.data : [doc.data]
+    return { items: arr.map((r) => toRadioItem(r, included)), total: doc.meta?.['record-count'] ?? 0 }
+  }
+  if (opts.userId) {
+    const doc = await request<JsonApiDoc<RadioAttrs>>(`/users/${opts.userId}/radios`, { params })
+    const included = doc.included ?? []
+    const arr = Array.isArray(doc.data) ? doc.data : [doc.data]
+    return { items: arr.map((r) => toRadioItem(r, included)), total: doc.meta?.['record-count'] ?? 0 }
+  }
+  if (opts.isFm) params['filter[is-fm]'] = 1
+  const doc = await request<JsonApiDoc<RadioAttrs>>('/radios', { params })
+  const included = doc.included ?? []
+  const arr = Array.isArray(doc.data) ? doc.data : [doc.data]
+  return { items: arr.map((r) => toRadioItem(r, included)), total: doc.meta?.['record-count'] ?? 0 }
+}
+
+// ---------- 节目详情 + 时间轴 ----------
+
+export interface RadioDetail {
+  id: string
+  title: string
+  desc: string
+  cover: string
+  duration: number
+  publishedAt: number
+  likes: number
+  comments: number
+  plays: number
+  isFree: boolean
+  isRequirePrivilege: boolean
+  mediaType: string
+  isFm: boolean
+  mediaId: string | null
+  audioFile: string | null
+  categories: { id: string; name: string }[]
+  djs: { id: string; nickname: string; avatar: string | null }[]
+  timelines: Timeline[]
+}
+
+export interface Timeline {
+  id: string
+  at: number
+  title: string
+  content: string | null
+  asset: string | null
+  quote: string | null
+}
+
+function stripHtml(s: string | null | undefined): string {
+  if (!s) return ''
+  const tmp = document.createElement('div')
+  tmp.innerHTML = s
+  return (tmp.textContent ?? '').replace(/\s+/g, ' ').trim()
+}
+
+export async function fetchRadioDetail(id: string): Promise<RadioDetail> {
+  const doc = await request<JsonApiDoc<RadioAttrs>>(`/radios/${id}`, {
+    params: { include: 'media.timelines,category,djs' },
+  })
+  const r = Array.isArray(doc.data) ? doc.data[0] : doc.data
+  const included = doc.included ?? []
+  const rel = r.relationships ?? {}
+  const lookup = new Map(included.map((x) => [`${x.type}:${x.id}`, x]))
+
+  // 注意：category 是单个对象关系，djs 是数组关系，两者形状不同
+  const catRef = rel.category?.data as { id: string } | { id: string }[] | null | undefined
+  const catIds = (Array.isArray(catRef) ? catRef : catRef ? [catRef] : []).map((x) => x.id)
+  const djRef = rel.djs?.data as { id: string } | { id: string }[] | null | undefined
+  const djIds = (Array.isArray(djRef) ? djRef : djRef ? [djRef] : []).map((x) => x.id)
+
+  const mediaIds = (rel.media?.data as { id: string } | { id: string }[] | undefined) ?? []
+  const mediaId = Array.isArray(mediaIds) ? mediaIds[0]?.id : mediaIds?.id
+  const media = mediaId ? lookup.get(`media:${mediaId}`) : undefined
+  const mediaType = ((media?.attributes as MediaAttrs | undefined)?.['media-type'] as string) ?? 'audio'
+
+  const timelines: Timeline[] = included
+    .filter((x) => x.type === 'timelines')
+    .map((x) => {
+      const a = x.attributes as unknown as TimelineAttrs
+      return {
+        id: x.id,
+        at: a.at,
+        title: a.title,
+        content: a.content,
+        asset: a.asset ?? null,
+        quote: a.quote ?? null,
+      }
+    })
+    .sort((a, b) => a.at - b.at)
+
+  return {
+    id: r.id,
+    mediaId: mediaId ?? null,
+    audioFile: (media?.attributes as MediaAttrs | undefined)?.audio ?? null,
+    title: r.attributes.title,
+    desc: stripHtml(r.attributes.desc) || stripHtml(r.attributes.summary),
+    cover: r.attributes.cover,
+    duration: r.attributes.duration,
+    publishedAt: r.attributes['published-at'],
+    likes: r.attributes['likes-count'] ?? 0,
+    comments: r.attributes['comments-count'] ?? 0,
+    plays: r.attributes.plays ?? 0,
+    isFree: r.attributes['is-free'],
+    isRequirePrivilege: r.attributes['is-require-privilege'],
+    mediaType,
+    isFm: Boolean(r.attributes['is-fm']),
+    categories: catIds.map((id) => {
+      const c = lookup.get(`categories:${id}`)
+      return { id, name: (c?.attributes.name as string) ?? '' }
+    }),
+    djs: djIds.map((id) => {
+      const u = lookup.get(`users:${id}`)
+      return {
+        id,
+        nickname: (u?.attributes.nickname as string) ?? '',
+        avatar: (u?.attributes.thumb as string) ?? null,
+      }
+    }),
+    timelines,
+  }
+}
+
+// ---------- 栏目 ----------
+
+export async function fetchCategories() {
+  const doc = await request<JsonApiDoc<CategoryAttrs>>('/categories', {
+    params: { 'filter[scope]': 'original', 'page[limit]': 100 },
+  })
+  const arr = Array.isArray(doc.data) ? doc.data : [doc.data]
+  return arr
+    .map((c) => ({
+      id: c.id,
+      name: c.attributes.name,
+      logo: c.attributes.logo ?? null,
+      background: c.attributes.background ?? null,
+      scope: (c.attributes as CategoryAttrs & { scope?: string }).scope ?? '',
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN'))
+    .map(({ id, name, logo, background, scope }) => ({ id, name, logo, background, scope }))
+}
+
+// ---------- 播单 / 有声书 ----------
+
+export interface AlbumItem {
+  id: string
+  title: string
+  cover: string
+  displayType: string
+  isFree: boolean
+  isRequirePrivilege: boolean
+  credit: number
+  count: number
+  /** 内容形态：这里的 record-count 恒为章节数，只有 audiobook 才是「章」 */
+  kind: AlbumKind
+  itemsLabel: string
+}
+
+/**
+ * 机核的 albums 集合混装了两类东西：
+ * - display-type=audiobook   有声书（章节 = 章）
+ * - 其余（album / 空）        DJ 与玩家整理的节目合集（节目 = 期）
+ * 同一个 id 从哪个入口点进来都要落到同一个详情页，所以按它分流，而不是按入口。
+ */
+export type AlbumKind = 'audiobook' | 'playlist'
+
+export async function fetchAlbums(displayType: 'audiobook' | 'album', offset = 0, limit = 12) {
+  const doc = await request<JsonApiDoc<AlbumAttrs>>('/albums', {
+    params: { 'filter[display-type]': displayType, 'page[limit]': limit, 'page[offset]': offset },
+  })
+  const arr = Array.isArray(doc.data) ? doc.data : [doc.data]
+  const items: AlbumItem[] = arr.map((a) => {
+    const kind: AlbumKind = a.attributes['display-type'] === 'audiobook' ? 'audiobook' : 'playlist'
+    return {
+      id: a.id,
+      title: a.attributes.title,
+      cover: a.attributes.cover,
+      displayType: a.attributes['display-type'],
+      isFree: a.attributes['is-free'],
+      isRequirePrivilege: a.attributes['is-require-privilege'],
+      credit: a.attributes.credit,
+      count: a.attributes['chapters-count'] ?? a.attributes['radios-count'] ?? 0,
+      kind,
+      itemsLabel: kind === 'audiobook' ? '章' : '期',
+    }
+  })
+  return { items, total: doc.meta?.['record-count'] ?? 0 }
+}
+
+export async function fetchAlbumRadios(albumId: string, offset = 0, limit = 20) {
+  // 服务端把这个路由的返回条数硬限制在 100：page[limit]=250 直接 400，
+  // 需要更多时用 offset 100/200/… 继续翻（超过总数的 offset 返回空数组）。
+  const size = Math.min(limit, 100)
+  const doc = await request<JsonApiDoc<RadioAttrs>>(`/albums/${albumId}/published-radios`, {
+    params: { 'page[limit]': size, 'page[offset]': offset, include: 'category,djs' },
+  })
+  const included = doc.included ?? []
+  const arr = Array.isArray(doc.data) ? doc.data : [doc.data]
+  return { items: arr.map((r) => toRadioItem(r, included)), total: doc.meta?.['record-count'] ?? 0 }
+}
+
+// ---------- 时间轴（按 media id 批量取） ----------
+
+/**
+ * 时间轴的唯一可靠来源是「详情」接口的复合文档：
+ *   GET /radios/{id}?include=media.timelines
+ * 注意两个坑：
+ * 1. `/medias/{mediaId}/timelines` 是 404 —— 没有这个路由；
+ * 2. 列表接口 `?include=media.timelines` 会返回几百条 timelines，但它们的
+ *    relationships.media 都是空对象 `{}`，无法判断属于哪一期，所以不能靠列表预取。
+ */
+export async function fetchRadioTimelines(radioId: string): Promise<Timeline[]> {
+  const doc = await request<JsonApiDoc<RadioAttrs>>(`/radios/${radioId}`, {
+    params: { include: 'media.timelines' },
+  })
+  const included = doc.included ?? []
+  const single = Array.isArray(doc.data) ? doc.data[0] : doc.data
+  const mediaId = (single?.relationships?.['media'] as { data?: { id: string } } | undefined)?.data?.id
+  const arr = included.filter((x) => x.type === 'timelines')
+  const owned = mediaId
+    ? arr.filter((x) => {
+        const rel = (x.relationships?.['media'] as { data?: { id: string } } | undefined)?.data
+        return !rel || rel.id === mediaId
+      })
+    : arr
+  return owned
+    .map((x) => {
+      const a = x.attributes as unknown as TimelineAttrs & { 'quote-href'?: string }
+      return {
+        id: x.id,
+        at: a.at ?? 0,
+        title: a.title ?? '',
+        content: a.content ?? null,
+        asset: a.asset ?? null,
+        quote: a['quote-href'] || a.quote || null,
+      }
+    })
+    .sort((a, b) => a.at - b.at)
+}
+
+// ---------- 收听会话（付费音频） ----------
+
+export interface ListeningSession {
+  url: string
+  tracked: boolean
+  sessionId?: string
+  heartbeatInterval: number
+}
+
+export async function startListeningSession(radioId: string, deviceId: string): Promise<ListeningSession> {
+  const res = await requestWithBody<{
+    url: string
+    tracked?: boolean
+    'session-id'?: string
+    'heartbeat-interval'?: number
+  }>(`/medias/protected/radios/${radioId}/listening-session`, 'POST', { 'device-id': deviceId })
+  if (!res?.url) throw new Error('收听会话没有返回音频地址')
+  return {
+    url: res.url,
+    tracked: Boolean(res.tracked),
+    sessionId: res['session-id'],
+    heartbeatInterval: Math.min(Math.max(res['heartbeat-interval'] ?? 60, 10), 600),
+  }
+}
+
+export function heartbeatListeningSession(sessionId: string) {
+  return requestWithBody<{ tracked: boolean }>('/medias/listening-session', 'PATCH', { 'session-id': sessionId })
+}
+
+export function releaseListeningSession(sessionId: string) {
+  return requestWithBody('/medias/listening-session', 'DELETE', { 'session-id': sessionId })
+}
+
+/** 免费节目：直接拼 alioss 地址 */
+export function freeAudioUrl(mediaAudio: string): string {
+  // 入驻播客（RSS 导入）的 audio 是完整外链，机核自制的只有文件名
+  if (/^https?:\/\//i.test(mediaAudio)) return mediaAudio
+  return `https://alioss.gcores.com/uploads/audio/${mediaAudio}`
+}
+
+// ---------- 搜索 ----------
+
+export async function searchRadios(query: string, offset = 0, limit = 20) {
+  const doc = await request<JsonApiDoc<RadioAttrs>>('/search', {
+    params: { query, type: 'radios', 'page[limit]': limit, 'page[offset]': offset, include: 'category,djs' },
+  })
+  const included = doc.included ?? []
+  const arr = Array.isArray(doc.data) ? doc.data : [doc.data]
+  return { items: arr.map((r) => toRadioItem(r, included)), total: doc.meta?.['record-count'] ?? 0 }
+}
+// ---------- 评论 ----------
+
+export interface CommentItem {
+  id: string
+  content: string
+  createdAt: number
+  likes: number
+  at: number | null
+  user: { id: string; nickname: string; avatar: string | null }
+  replies: CommentItem[]
+}
+
+interface CommentAttrs {
+  content?: string | null
+  'created-at'?: number
+  'liked-count'?: number
+  'radio-timestamp'?: number | null
+  'reply-count'?: number
+}
+
+export async function fetchComments(radioId: string, offset = 0, limit = 20): Promise<CommentItem[]> {
+  const doc = await request<JsonApiDoc<CommentAttrs>>(`/radios/${radioId}/comments`, {
+    params: { 'page[limit]': limit, 'page[offset]': offset, include: 'user,replies' },
+  })
+  const arr = Array.isArray(doc.data) ? doc.data : [doc.data]
+  const included = doc.included ?? []
+  const lookup = new Map(included.map((x) => [`${x.type}:${x.id}`, x]))
+
+  const toItem = (c: (typeof arr)[number]): CommentItem => {
+    const rel = c.relationships ?? {}
+    const userId = (rel.user?.data as { id: string } | undefined)?.id
+    const u = userId ? lookup.get(`users:${userId}`) : undefined
+    const replyRef = rel.replies?.data as { id: string }[] | undefined
+    return {
+      id: c.id,
+      content: stripHtml(c.attributes.content),
+      createdAt: c.attributes['created-at'] ?? 0,
+      likes: c.attributes['liked-count'] ?? 0,
+      at: c.attributes['radio-timestamp'] ?? null,
+      user: {
+        id: userId ?? '',
+        nickname: (u?.attributes.nickname as string) ?? '机核用户',
+        avatar: (u?.attributes.thumb as string) ?? null,
+      },
+      replies: (replyRef ?? [])
+        .map((ref) => lookup.get(`comments:${ref.id}`))
+        .filter(Boolean)
+        .map((r) => {
+          const rr = r as JsonApiResource<CommentAttrs>
+          const rid = (rr.relationships?.user?.data as { id: string } | undefined)?.id
+          const ru = rid ? lookup.get(`users:${rid}`) : undefined
+          return {
+            id: rr.id,
+            content: stripHtml(rr.attributes.content),
+            createdAt: rr.attributes['created-at'] ?? 0,
+            likes: 0,
+            at: null,
+            user: {
+              id: rid ?? '',
+              nickname: (ru?.attributes.nickname as string) ?? '机核用户',
+              avatar: (ru?.attributes.thumb as string) ?? null,
+            },
+            replies: [],
+          } as CommentItem
+        }),
+    }
+  }
+
+  // 只取顶层评论（replies 走 included）
+  return arr.filter((c) => !(c.relationships?.parent?.data)).map(toItem)
+}
+
+/** 相似节目（用于详情页「更多节目」）。接口偶发 5xx，所以静默降级为空数组。 */
+export async function fetchSimilarRadios(radioId: string, limit = 8): Promise<RadioListItem[]> {
+  try {
+    const doc = await request<JsonApiDoc<RadioAttrs>>(`/radios/${radioId}/similarities`, {
+      params: { 'page[limit]': limit, include: 'category,djs' },
+    })
+    const included = doc.included ?? []
+    const arr = Array.isArray(doc.data) ? doc.data : doc.data ? [doc.data] : []
+    return arr.map((r) => toRadioItem(r, included))
+  } catch {
+    return []
+  }
+}
+
+// ---------- 批量获取（用于收听记录 / 收藏的水合） ----------
+
+/**
+ * 一次取多个节目：`/radios?filter[id]=1,2,3`（Rails 的 id 数组过滤，逗号分隔）。
+ * 注意：返回顺序不保证与传入顺序一致，调用方需要自己按 id 重排。
+ */
+export async function fetchRadiosByIds(ids: string[]): Promise<RadioListItem[]> {
+  if (!ids.length) return []
+  const doc = await request<JsonApiDoc<RadioAttrs>>('/radios', {
+    params: { 'filter[id]': ids.join(','), 'page[limit]': ids.length, include: 'category,djs' },
+  })
+  const included = doc.included ?? []
+  const arr = Array.isArray(doc.data) ? doc.data : doc.data ? [doc.data] : []
+  return arr.map((r) => toRadioItem(r, included))
+}
+
+// ---------- 收听记录 ----------
+
+export interface HistoryEntry {
+  radioId: string
+  /** 上次听到的位置（秒） */
+  progress: number
+  /** 最近一次收听时间（毫秒） */
+  timestamp: number
+}
+
+/**
+ * 收听记录。返回的是**非 JSON:API** 的私有结构：
+ * `{ "updated-at": <ms>, "playlist": [{ id, type: "radios", progress, timestamp }], "readlist": [...] }`
+ * 只有 id 没有标题，需要再用 fetchRadiosByIds 水合。需要登录（未登录 403）。
+ */
+export async function fetchHistory(): Promise<HistoryEntry[]> {
+  const res = await request<{
+    'updated-at'?: number
+    playlist?: { id: string; type: string; progress?: number; timestamp?: number }[]
+  }>('/history')
+  const list = res?.playlist ?? []
+  return list
+    .filter((x) => x.type === 'radios')
+    .map((x) => ({
+      radioId: String(x.id),
+      progress: Number(x.progress ?? 0),
+      timestamp: Number(x.timestamp ?? res['updated-at'] ?? 0),
+    }))
+}
+
+// ---------- 收藏 ----------
+
+export interface BookmarkEntry {
+  bookmarkId: string
+  /** 被收藏的对象类型（这里只关心 radios） */
+  type: string
+  targetId: string
+  updatedAt: number
+}
+
+/**
+ * 收藏列表。`include=bookmarkable` 目前不会把被收藏的资源放进 included，
+ * 所以只拿到关系 id，需要 fetchRadiosByIds 水合。需要登录。
+ */
+export async function fetchBookmarks(opts: { offset?: number; limit?: number; radioOnly?: boolean } = {}) {
+  const { offset = 0, limit = 30, radioOnly = true } = opts
+  const params: Query = {
+    'page[limit]': limit,
+    'page[offset]': offset,
+    include: 'bookmarkable',
+  }
+  if (radioOnly) params['filter[bookmarkable-type]'] = 'radios'
+  const uid = getAuth()?.userId
+  if (!uid) throw new Error('请先登录')
+  const doc = await request<JsonApiDoc<{ 'updated-at'?: string }>>(`/users/${uid}/bookmarks`, { params })
+  const arr = Array.isArray(doc.data) ? doc.data : doc.data ? [doc.data] : []
+  const entries: BookmarkEntry[] = arr.map((b) => {
+    const target = b.relationships?.bookmarkable?.data as { id: string; type: string } | undefined
+    return {
+      bookmarkId: b.id,
+      type: target?.type ?? '',
+      targetId: target?.id ?? '',
+      updatedAt: Date.parse(b.attributes['updated-at'] ?? '') || 0,
+    }
+  })
+  return { entries, total: doc.meta?.['record-count'] ?? entries.length }
+}
+
+// ---------- 播单详情 ----------
+
+export interface AlbumDetail extends AlbumItem {
+  description: string
+  author: string | null
+  background: string | null
+  publishedAt: number
+  subscriptions: number
+  ownerType: string | null
+}
+
+export async function fetchAlbumDetail(albumId: string): Promise<AlbumDetail> {
+  // 注意：albums 没有 category 关系，带 include=category 会 400「category is not a valid relationship of albums」
+  const doc = await request<JsonApiDoc<AlbumAttrs>>(`/albums/${albumId}`)
+  const d = Array.isArray(doc.data) ? doc.data[0] : doc.data
+  const a = d.attributes
+  const kind: AlbumKind = a['display-type'] === 'audiobook' ? 'audiobook' : 'playlist'
+  return {
+    id: d.id,
+    title: a.title,
+    cover: a.cover,
+    displayType: a['display-type'],
+    isFree: a['is-free'],
+    isRequirePrivilege: a['is-require-privilege'],
+    credit: a.credit,
+    count: a['chapters-count'] ?? a['radios-count'] ?? 0,
+    kind,
+    itemsLabel: kind === 'audiobook' ? '章' : '期',
+    description: stripHtml(a.description ?? a.desc ?? ''),
+    author: (a.author as string | undefined) ?? null,
+    background: (a.background as string | undefined) ?? null,
+    publishedAt: (a['published-at'] as number | undefined) ?? 0,
+    subscriptions: a['subscriptions-count'] ?? 0,
+    ownerType: (a['owner-type'] as string | undefined) ?? null,
+  }
+}
+
+/**
+ * 新增收藏：POST /bookmarks。
+ * 必须同时给出 user 和 bookmarkable 两条 relationship（resource linkage），
+ * 只给 bookmarkable 会 422「user-id - 已经被使用」。
+ */
+export async function createBookmark(radioId: string): Promise<string> {
+  const userId = getAuth()?.userId
+  if (!userId) throw new Error('请先登录')
+  const doc = await requestWithBody<JsonApiDoc<Record<string, never>>>('/bookmarks', 'POST', {
+    type: 'bookmarks',
+    attributes: {},
+    relationships: {
+      bookmarkable: { data: { type: 'radios', id: radioId } },
+      user: { data: { type: 'users', id: userId } },
+    },
+  })
+  const d = Array.isArray(doc.data) ? doc.data[0] : doc.data
+  return d?.id ?? ''
+}
+
+/** 取消收藏：DELETE /bookmarks/{bookmarkId}（204）。 */
+export async function deleteBookmark(bookmarkId: string): Promise<void> {
+  await request(`/bookmarks/${bookmarkId}`, { method: 'DELETE' })
+}
