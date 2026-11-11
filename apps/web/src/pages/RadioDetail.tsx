@@ -378,25 +378,31 @@ function TimelineList({ timelines, onJump }: { timelines: Timeline[]; onJump: (s
 
   return (
     <div className="px-3 pt-2">
-      <div className="relative mb-2 flex h-8 items-center justify-between px-1">
-        <span className="shrink-0 text-[14px] text-[#8a92a3]">点章节跳转</span>
+      {/* 三列网格：左右两列等宽（1fr），中列自适应——中列因此天然落在整行正中。
+          不用 absolute 居中：全局 index.css 给所有 button 强制了 position: relative
+          （为了撑热区），Tailwind 的 .absolute 会被它压掉，定位根本不生效。 */}
+      <div className="mb-2 grid h-8 grid-cols-[1fr_auto_1fr] items-center gap-2 px-1">
+        <span className="shrink-0 justify-self-start text-[14px] text-[#8a92a3]">点章节跳转</span>
 
-        {/* 顶部居中：返回当前播放（只在离开跟随、或列表不在当前章节时出现） */}
-        {awayFromCurrent && (
-          <button
-            type="button"
-            onClick={backToCurrent}
-            className="absolute left-1/2 flex h-8 -translate-x-1/2 items-center gap-1 rounded-full bg-[#2a2f3a] px-3.5 text-[15px] font-medium text-[#5b9dff] active:bg-[#343a46]"
-          >
-            返回当前播放
-          </button>
-        )}
+        {/* 中间：返回当前播放（只在离开跟随、或列表不在当前章节时出现）。
+            没出现时这格是空的，网格宽度仍由两侧决定，不会让左右文字跳动 */}
+        <div className="flex justify-center">
+          {awayFromCurrent && (
+            <button
+              type="button"
+              onClick={backToCurrent}
+              className="flex h-8 shrink-0 items-center gap-1 rounded-full bg-[#2a2f3a] px-3.5 text-[15px] font-medium text-[#5b9dff] active:bg-[#343a46]"
+            >
+              返回当前播放
+            </button>
+          )}
+        </div>
 
         <button
           type="button"
           onClick={() => setFollow((v) => !v)}
           className={cn(
-            'flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-[13px]',
+            'flex shrink-0 items-center gap-1 justify-self-end rounded-full px-2.5 py-1.5 text-[13px]',
             follow ? 'bg-gcores/15 text-gcores' : 'bg-card text-[#8a92a3]',
           )}
         >
