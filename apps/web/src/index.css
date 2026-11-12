@@ -192,3 +192,10 @@ body {
 #root {
   overflow: hidden;
 }
+
+/* 定高页面（例如节目详情）：外层 main 不再滚动，滚动只交给页面里的内容区（时间轴 / 简介 / 评论）。
+   否则会出现两层滚动：拖外层滚动条时，头部、节目信息、页签和时间轴整块一起被拖走，下面露出空白。 */
+main:has(> .page-fill) {
+  overflow: hidden;
+  padding-bottom: 0;
+}

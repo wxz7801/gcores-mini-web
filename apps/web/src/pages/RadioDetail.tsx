@@ -47,17 +47,6 @@ export function RadioDetailPage() {
   const detail = q.data
   const isCurrent = current?.radioId === detail?.id
 
-  // 吸顶头的真实高度：竖屏带状态栏留白、横屏不带，不能写死一个 top
-  const headerRef = useRef<HTMLElement | null>(null)
-  const [headH, setHeadH] = useState(56)
-  useEffect(() => {
-    const el = headerRef.current
-    if (!el) return
-    const ro = new ResizeObserver(() => setHeadH(Math.round(el.getBoundingClientRect().height)))
-    ro.observe(el)
-    setHeadH(Math.round(el.getBoundingClientRect().height))
-    return () => ro.disconnect()
-  }, [])
 
   // 时间轴单独按 mediaId 取：详情接口的 include 不稳定，media 路由最可靠
   const tl = useTimelines(detail?.id)
@@ -99,9 +88,10 @@ export function RadioDetailPage() {
   }
 
   return (
-    <div className="pb-40">
-      {/* 头部吸顶到 0；下面的 Tab 条用 style 里的 top 贴在它下沿，高度按实测来（竖屏带状态栏留白，不是 56） */}
-      <PageHeader ref={headerRef} className="flex items-center gap-2 px-2 pt-[max(8px,env(safe-area-inset-top))] pb-2">
+    // 整页定高、不滚：头部 / 节目信息 / 页签固定，只有页签下面那块内容自己滚。
+    // page-fill 让外层 main 关掉自身滚动（见 index.css），否则会出现「外层 + 时间轴」两层滚动。
+    <div className="page-fill flex h-full min-h-0 flex-col">
+      <PageHeader sticky={false} className="flex shrink-0 items-center gap-2 px-2 pt-[max(8px,env(safe-area-inset-top))] pb-2">
         <button type="button" onClick={() => nav(-1)} aria-label="返回" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M15 5l-7 7 7 7" />
@@ -137,7 +127,7 @@ export function RadioDetailPage() {
       {detail && (
         <>
           {/* 头图区：大封面 + 标题 */}
-          <div className="px-4 pt-2">
+          <div className="shrink-0 px-4 pt-2">
             <div className="flex gap-3">
               <CoverImage
                 src={coverUrl(detail.cover, 400)}
@@ -190,7 +180,7 @@ export function RadioDetailPage() {
           </div>
 
           {/* Tab：时间轴 / 简介 / 评论 */}
-          <div className="sticky z-10 mt-3 flex gap-1 border-b border-outline-variant bg-surface-container-low px-3 pt-1" style={{ top: headH }}>
+          <div className="mt-3 flex shrink-0 gap-1 border-b border-outline-variant bg-surface-container-low px-3 pt-1">
             {(
               [
                 ...(timelines.length ? [{ id: 'timeline' as Tab, label: '时间轴' }] : []),
@@ -219,12 +209,16 @@ export function RadioDetailPage() {
             <TimelineList timelines={timelines} onJump={(sec) => (isCurrent ? seek(sec) : onPlay())} />
           )}
           {tab === 'intro' && (
-            <>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-28">
               <Intro detail={detail} />
               <MoreLikeThis radioId={detail.id} />
-            </>
+            </div>
           )}
-          {tab === 'comments' && <Comments radioId={detail.id} />}
+          {tab === 'comments' && (
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-28">
+              <Comments radioId={detail.id} />
+            </div>
+          )}
         </>
       )}
     </div>
@@ -283,11 +277,27 @@ function TimelineList({ timelines, onJump }: { timelines: Timeline[]; onJump: (s
   // 列表自己滚（而不是滚整页），否则「居中」会把页面标题也顶走
   const boxRef = useRef<HTMLDivElement>(null)
   const [follow, setFollow] = useState(true)
-  // 面板换出来时才开始滚动：首次进页面时章节图还没加载，算出来的偏移会被夹在小高度上
+  // 等章节卡排好版再居中：首次进页面时图片还没解码，卡片高度偏小，
+  // 算出来的偏移会被夹住，后面高度一涨就停在中途，看起来就是「滚到一半卡住 / 空白」。
+  // 所以等两帧 + 图片 load/decode 之后再解除。
   const [painted, setPainted] = useState(false)
   useEffect(() => {
-    const t = window.requestAnimationFrame(() => setPainted(true))
-    return () => window.cancelAnimationFrame(t)
+    let done = false
+    const finish = () => {
+      if (!done) {
+        done = true
+        setPainted(true)
+      }
+    }
+    const raf1 = window.requestAnimationFrame(() => window.requestAnimationFrame(finish))
+    // 图片全部解码完（或 400ms 兜底）再算一次，最多等这么久，不卡住交互
+    const imgs = Array.from(boxRef.current?.querySelectorAll('img') ?? [])
+    const timer = window.setTimeout(finish, 400)
+    Promise.all(imgs.map((img) => (img.complete ? Promise.resolve() : img.decode().catch(() => undefined)))).then(finish)
+    return () => {
+      window.cancelAnimationFrame(raf1)
+      window.clearTimeout(timer)
+    }
   }, [])
 
   // 找到当前时间点对应的章节
@@ -345,6 +355,34 @@ function TimelineList({ timelines, onJump }: { timelines: Timeline[]; onJump: (s
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [follow, painted, activeId])
 
+  // 图片解码完卡片会变高，居中位置随之偏移：只要用户没在手动滚，就再贴合一次当前位置
+  useEffect(() => {
+    const box = boxRef.current
+    if (!box || !follow || !activeId) return
+    let timer = 0
+    const ro = new ResizeObserver(() => {
+      if (programmatic.current) return
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => {
+        const el = box.querySelector<HTMLElement>(`[data-tl="${activeId}"]`)
+        if (!el) return
+        const br = box.getBoundingClientRect()
+        const ar = el.getBoundingClientRect()
+        const visible = ar.bottom > br.top + 40 && ar.top < br.bottom - 40
+        // 用户已经划走（有自己的浏览意图）就不去抢滚动位置
+        if (visible) return
+        const top = ar.top - br.top + box.scrollTop - (box.clientHeight - el.offsetHeight) / 2
+        box.scrollTop = Math.max(0, top)
+      }, 120)
+    })
+    ro.observe(box.firstElementChild ?? box)
+    return () => {
+      window.clearTimeout(timer)
+      ro.disconnect()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [follow, activeId, painted])
+
   // 播放推进换段：平滑跟随（第一段由上面的「进入页面」负责居中，避免重复滚动）
   const lastCentered = useRef<string | null>(null)
   useEffect(() => {
@@ -400,7 +438,7 @@ function TimelineList({ timelines, onJump }: { timelines: Timeline[]; onJump: (s
   }
 
   return (
-    <div className="px-3 pt-2">
+    <div className="flex min-h-0 flex-1 flex-col px-3 pt-2">
       {/* 三列网格：左右两列等宽（1fr），中列自适应——中列因此天然落在整行正中。
           不用 absolute 居中：全局 index.css 给所有 button 强制了 position: relative
           （为了撑热区），Tailwind 的 .absolute 会被它压掉，定位根本不生效。 */}
@@ -441,7 +479,7 @@ function TimelineList({ timelines, onJump }: { timelines: Timeline[]; onJump: (s
         onScroll={() => {
           if (!programmatic.current) checkAway()
         }}
-        className="no-scrollbar relative max-h-[calc(100dvh-320px)] overflow-y-auto overscroll-contain"
+        className="no-scrollbar relative min-h-0 flex-1 overflow-y-auto overscroll-contain pb-28"
       >
         {timelines.map((t) => {
           const active = t.id === activeId
