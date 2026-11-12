@@ -28,9 +28,11 @@ export function FloatingNav() {
       aria-label="主导航"
       className={cn(
         'fixed z-40 flex items-stretch gap-1 border-t border-outline-variant bg-surface-container',
+        // 横屏：内容区里的一条居中栏（舞台占了左侧，导航跟着内容走）
+        // 竖屏：整宽贴底，和上面的播放条堆叠成「控制栏 / 底栏」两层，不再做成悬浮胶囊
         wide
           ? 'bottom-0 left-1/2 w-[480px] max-w-[52vw] -translate-x-1/2 rounded-t-xl px-2'
-          : 'bottom-[calc(64px+env(safe-area-inset-bottom))] left-1/2 w-[calc(100%-24px)] max-w-[500px] -translate-x-1/2 rounded-xl border px-1.5',
+          : 'inset-x-0 bottom-0 h-16 px-1.5 pb-[env(safe-area-inset-bottom)]',
       )}
     >
       {items.map((it) => (

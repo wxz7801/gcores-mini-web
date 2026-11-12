@@ -1,8 +1,7 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { usePlayer } from '../store/player'
-import { formatTime } from '../lib/format'
 import { CoverImage } from './CoverImage'
+import { PlayerControls } from './PlayerControls'
 
 /**
  * 横屏左侧舞台区（大屏唯一的播放控制）。
@@ -22,16 +21,7 @@ export function Stage() {
 /** 播放面板：容器不接收触摸，这块面板整体可点（点封面进详情），内部按钮各自处理 */
 function StagePanel() {
   const current = usePlayer((s) => s.current)
-  const position = usePlayer((s) => s.position)
-  const playing = usePlayer((s) => s.playing)
-  const duration = usePlayer((s) => s.duration)
-  const loading = usePlayer((s) => s.loading)
   const navigate = useNavigate()
-  const toggle = usePlayer((s) => s.toggle)
-  const next = usePlayer((s) => s.next)
-  const prev = usePlayer((s) => s.prev)
-  const skip = usePlayer((s) => s.skip)
-  const seek = usePlayer((s) => s.seek)
 
   if (!current) {
     return (
@@ -49,8 +39,6 @@ function StagePanel() {
     )
   }
 
-  const total = duration || current.duration || 0
-  const pct = total > 0 ? Math.min(100, (position / total) * 100) : 0
   const openDetail = () => navigate(`/radio/${current.radioId}`)
 
   return (
@@ -89,147 +77,9 @@ function StagePanel() {
           </div>
         </div>
 
-        {/* 进度 + 控制栏（对齐机核 App 播放条）：跟随封面组一起居中，
-            不再 mt-auto 顶到栏目最底 */}
-          <div className="mt-3 shrink-0">
-          <div className="mb-1 flex items-center justify-between font-mono text-[13px] tabular-nums text-on-surface-variant">
-            <span className="text-on-surface">{formatTime(position)}</span>
-            <span>{formatTime(total)}</span>
-          </div>
-          <StageSeekBar pct={pct} position={position} total={total} onSeek={seek} />
-
-          <div className="mt-2 grid grid-cols-5 items-center">
-            <IconBtn label="后退 15 秒" onClick={() => skip(-15)}>
-              <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
-                <path d="M12 5a7 7 0 1 1-6.5 4.5" />
-                <path d="M4 4.5V9h4.5" />
-                <text x="12" y="15.5" textAnchor="middle" fontSize="7" fill="currentColor" stroke="none">15</text>
-              </svg>
-            </IconBtn>
-            <IconBtn label="上一集" onClick={prev}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 5l-10 7 10 7z" />
-                <rect x="5" y="5" width="2.5" height="14" rx="1" />
-              </svg>
-            </IconBtn>
-            <div className="flex items-center justify-center">
-              <button
-                type="button"
-                onClick={toggle}
-                aria-label={playing ? '暂停' : '播放'}
-                className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-primary text-on-primary hover:brightness-110 active:brightness-95"
-              >
-                {playing ? (
-                  <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor">
-                    <rect x="6" y="4" width="4.5" height="16" rx="1" />
-                    <rect x="13.5" y="4" width="4.5" height="16" rx="1" />
-                  </svg>
-                ) : (
-                  <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M8 4l13 8-13 8z" />
-                  </svg>
-                )}
-              </button>
-            </div>
-            <IconBtn label="下一集" onClick={next}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M5 5l10 7-10 7z" />
-                <rect x="16.5" y="5" width="2.5" height="14" rx="1" />
-              </svg>
-            </IconBtn>
-            <IconBtn label="前进 15 秒" onClick={() => skip(15)}>
-              <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
-                <path d="M12 5a7 7 0 1 0 6.5 4.5" />
-                <path d="M20 4.5V9h-4.5" />
-                <text x="12" y="15.5" textAnchor="middle" fontSize="7" fill="currentColor" stroke="none">15</text>
-              </svg>
-            </IconBtn>
-          </div>
-
-          {loading && <div className="mt-1 text-center text-[12px] text-on-surface-variant">缓冲中…</div>}
-        </div>
+        {/* 进度 + 控制栏：与竖屏底部堆叠共用同一个组件，保证按钮与尺寸一致 */}
+        <PlayerControls className="mt-3 shrink-0" />
       </div>
     </div>
-  )
-}
-
-/** 可点可拖的进度条 */
-function StageSeekBar({
-  pct,
-  position,
-  total,
-  onSeek,
-}: {
-  pct: number
-  position: number
-  total: number
-  onSeek: (sec: number) => void
-}) {
-  const progressAt = (e: React.PointerEvent<HTMLDivElement>) => {
-    const r = e.currentTarget.getBoundingClientRect()
-    return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * total
-  }
-  const [drag, setDrag] = useState<number | null>(null)
-  const shown = drag ?? pct
-
-  return (
-    <div
-      role="slider"
-      aria-label="播放进度"
-      aria-valuemin={0}
-      aria-valuemax={Math.round(total)}
-      aria-valuenow={Math.round(position)}
-      tabIndex={0}
-      onPointerDown={(e) => {
-        if (total <= 0) return
-        e.currentTarget.setPointerCapture(e.pointerId)
-        const v = progressAt(e)
-        setDrag(total > 0 ? (v / total) * 100 : 0)
-        onSeek(v)
-      }}
-      onPointerMove={(e) => {
-        if (drag === null || total <= 0) return
-        setDrag((progressAt(e) / total) * 100)
-      }}
-      onPointerUp={(e) => {
-        if (drag !== null && total > 0) onSeek(progressAt(e))
-        setDrag(null)
-      }}
-      onPointerCancel={() => setDrag(null)}
-      onKeyDown={(e) => {
-        if (e.key === 'ArrowLeft') onSeek(Math.max(0, position - 15))
-        if (e.key === 'ArrowRight') onSeek(Math.min(total, position + 15))
-      }}
-      className="relative flex h-14 items-center touch-none"
-    >
-      <div className="relative h-[6px] w-full rounded-full bg-surface-variant">
-        <div className="h-full rounded-full bg-primary" style={{ width: `${shown}%` }} />
-        <div
-          className="pointer-events-none absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary outline-2 outline-surface"
-          style={{ left: `${shown}%` }}
-        />
-      </div>
-    </div>
-  )
-}
-
-function IconBtn({
-  label,
-  onClick,
-  children,
-}: {
-  label: string
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      className="mx-auto flex h-14 w-14 items-center justify-center rounded-full text-on-surface-variant hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
-    >
-      {children}
-    </button>
   )
 }

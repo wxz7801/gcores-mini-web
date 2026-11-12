@@ -26,7 +26,8 @@ export function AppShell({
     return (
       <div className="flex h-full w-full flex-col overflow-hidden bg-surface">
         {/* 底部播放条 + 悬浮导航是常驻的，内容区留出高度，滚到底不会被压住 */}
-        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[124px]">{children}</main>
+        {/* 底部是两层堆叠：播放控制栏（64）+ 导航底栏（64），内容留出高度免得被压住 */}
+        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[140px]">{children}</main>
         {footer}
       </div>
     )
