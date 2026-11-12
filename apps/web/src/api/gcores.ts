@@ -487,6 +487,11 @@ export interface CommentItem {
   fromAuthor: boolean
   /** 这一层下面还有几条（含间接），和实际拉到的不一定相等 */
   replyCount: number
+  /**
+   * 这条回复在回复谁（「A 回复 B」里的 B）。直接在顶层评论下说话时为 null。
+   * 注意：拿不到时不要瞎猜，宁可留空。
+   */
+  replyToName: string | null
   replies: CommentItem[]
 }
 
@@ -524,14 +529,19 @@ const COMMENT_MAX_LIMIT = 100
  *    服务端对 included 里的子评论不下发 user 关系（返回 `{}`），
  *    只有顺着 descendants 再 include 一层 user，子评论的 user 才会回来。
  *    只写 `user` 时子评论作者全是「机核用户」，而且不报错，很难发现。
+ *    同理，`descendants.parent.user` 才能拿到「回复的是谁」。
  */
 export async function fetchComments(radioId: string, offset = 0, limit = 20): Promise<CommentsPage> {
   const doc = await request<JsonApiDoc<CommentAttrs>>(`/radios/${radioId}/comments`, {
     params: {
       'page[limit]': Math.min(limit, COMMENT_MAX_LIMIT),
       'page[offset]': offset,
-      // 顺序别动：user 是顶层评论的作者，descendants.user 是回复的作者
-      include: 'user,descendants.user',
+      // 顺序别动：
+      //   user                      顶层评论的作者
+      //   descendants.user          回复的作者
+      //   descendants.parent.user   回复的父评论及其作者（「A 回复 B」里的 B）
+      //   descendants.root.user     根评论作者（兜底：parent 拿不到时用）
+      include: 'user,descendants.user,descendants.parent.user,descendants.root.user',
     },
   })
   const arr = Array.isArray(doc.data) ? doc.data : doc.data ? [doc.data] : []
@@ -556,18 +566,28 @@ export async function fetchComments(radioId: string, offset = 0, limit = 20): Pr
     }
   }
 
-  const toReply = (res: JsonApiResource<CommentAttrs>): CommentItem => ({
-    id: res.id,
-    content: stripHtml(res.attributes.body),
-    createdAt: Date.parse(res.attributes['created-at'] ?? '') || 0,
-    likes: res.attributes['likes-count'] ?? 0,
-    at: res.attributes['radio-timestamp'] ?? null,
-    user: userOf(res),
-    depth: res.attributes.depth ?? 1,
-    fromAuthor: Boolean(res.attributes['liked-by-author']),
-    replyCount: res.attributes['descendants-count'] ?? 0,
-    replies: [],
-  })
+  const toReply = (res: JsonApiResource<CommentAttrs>, topId: string): CommentItem => {
+    // 「A 回复 B」：优先用 parent 关系的作者；parent 缺失时退到 root 关系的作者；
+    // 如果指向的就是当前这条顶层评论的作者，就不用标注了（本来就在楼层下面）
+    const parentId = (res.relationships?.parent?.data as { id: string } | undefined)?.id
+    const rootId = (res.relationships?.root?.data as { id: string } | undefined)?.id
+    const target = parentId ? lookup.get(`comments:${parentId}`) : rootId ? lookup.get(`comments:${rootId}`) : undefined
+    const targetName = target ? userOf(target as JsonApiResource<CommentAttrs>).nickname : null
+    const topAuthor = userOf(arr.find((t) => t.id === topId)).nickname
+    return {
+      id: res.id,
+      content: stripHtml(res.attributes.body),
+      createdAt: Date.parse(res.attributes['created-at'] ?? '') || 0,
+      likes: res.attributes['likes-count'] ?? 0,
+      at: res.attributes['radio-timestamp'] ?? null,
+      user: userOf(res),
+      depth: res.attributes.depth ?? 1,
+      fromAuthor: Boolean(res.attributes['liked-by-author']),
+      replyCount: res.attributes['descendants-count'] ?? 0,
+      replyToName: targetName && targetName !== topAuthor ? targetName : null,
+      replies: [],
+    }
+  }
 
   const items = arr
     .filter((c) => (c.attributes.depth ?? 0) === 0)
@@ -575,7 +595,7 @@ export async function fetchComments(radioId: string, offset = 0, limit = 20): Pr
       const childIds = ((c.relationships?.descendants?.data as { id: string }[] | undefined) ?? [])
         .map((ref) => byId.get(ref.id))
         .filter(Boolean) as JsonApiResource<CommentAttrs>[]
-      const children = childIds.map(toReply)
+      const children = childIds.map((r) => toReply(r, c.id))
       // 父评论 + 直接子评论（depth 1）都已经按时间倒序返回，顺序本身是可信的
       return {
         id: c.id,
@@ -587,6 +607,7 @@ export async function fetchComments(radioId: string, offset = 0, limit = 20): Pr
         depth: 0,
         fromAuthor: Boolean(c.attributes['liked-by-author']),
         replyCount: c.attributes['descendants-count'] ?? children.length,
+        replyToName: null,
         replies: children,
       }
     })
