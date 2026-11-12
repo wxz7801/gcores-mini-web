@@ -465,74 +465,128 @@ export async function searchRadios(query: string, offset = 0, limit = 20) {
 }
 // ---------- 评论 ----------
 
+export interface CommentUser {
+  id: string
+  nickname: string
+  avatar: string | null
+}
+
 export interface CommentItem {
   id: string
   content: string
   createdAt: number
   likes: number
+  /** 评论里带的时间点（radio-timestamp，秒），点到第几分钟就有的那种 */
   at: number | null
-  user: { id: string; nickname: string; avatar: string | null }
+  user: CommentUser
+  /** 楼层数：直接回复记 1，回复的回复记 2。缩进只在 1/2 层之间区分，更深的仍按 2 层排 */
+  depth: number
+  /** 楼主标记（机核官方的 liked-by-author） */
+  fromAuthor: boolean
+  /** 这一层下面还有几条（含间接），和实际拉到的不一定相等 */
+  replyCount: number
   replies: CommentItem[]
 }
 
 interface CommentAttrs {
-  content?: string | null
-  'created-at'?: number
-  'liked-count'?: number
+  /** 正文，纯文本；机核里偶尔会带 HTML 实体，统一用 stripHtml 过一遍 */
+  body?: string | null
+  'created-at'?: string
+  'likes-count'?: number
+  'descendants-count'?: number
   'radio-timestamp'?: number | null
-  'reply-count'?: number
+  'liked-by-author'?: boolean
+  depth?: number
 }
 
-export async function fetchComments(radioId: string, offset = 0, limit = 20): Promise<CommentItem[]> {
-  const doc = await request<JsonApiDoc<CommentAttrs>>(`/radios/${radioId}/comments`, {
-    params: { 'page[limit]': limit, 'page[offset]': offset, include: 'user,replies' },
-  })
-  const arr = Array.isArray(doc.data) ? doc.data : [doc.data]
-  const included = doc.included ?? []
-  const lookup = new Map(included.map((x) => [`${x.type}:${x.id}`, x]))
+export interface CommentsPage {
+  items: CommentItem[]
+  /** 总条数（含回复），来自 meta.record-count */
+  total: number
+}
 
-  const toItem = (c: (typeof arr)[number]): CommentItem => {
-    const rel = c.relationships ?? {}
-    const userId = (rel.user?.data as { id: string } | undefined)?.id
-    const u = userId ? lookup.get(`users:${userId}`) : undefined
-    const replyRef = rel.replies?.data as { id: string }[] | undefined
+/** 机核评论接口的分页上限，写死了 page[size] 超过 100 就 400 */
+const COMMENT_MAX_LIMIT = 100
+
+/**
+ * 拉节目评论。
+ *
+ * 坑（这几个都会静默把评论变成空列表，改之前先看一眼）：
+ * 1. `include=replies` 会 400："replies is not a valid relationship of comments"。
+ *    有效的子评论关系叫 **descendants**（还有 children / oldest-descendants）。
+ * 2. 正文在 attributes.**body** 里，不是 content。
+ * 3. created-at 是 ISO 字符串，不是时间戳，要 Date.parse。
+ * 4. 顶层评论的 data 里没有 parent，但所有资源的关系对象都是 `{}`（连 user 都是 `{}`），
+ *    所以只能靠 attributes.depth === 0 区分顶层，不能用 parent / children 判断。
+ * 5. 子评论资源自己不带 user 关系，作者要靠遍历顶层评论的 descendants 累加。
+ *    接口不支持嵌套 include 路径，所以按顶层批量拉，前端再组装成三层。
+ */
+export async function fetchComments(radioId: string, offset = 0, limit = 20): Promise<CommentsPage> {
+  const doc = await request<JsonApiDoc<CommentAttrs>>(`/radios/${radioId}/comments`, {
+    params: {
+      'page[limit]': Math.min(limit, COMMENT_MAX_LIMIT),
+      'page[offset]': offset,
+      include: 'user,descendants',
+    },
+  })
+  const arr = Array.isArray(doc.data) ? doc.data : doc.data ? [doc.data] : []
+  const lookup = new Map((doc.included ?? []).map((x) => [`${x.type}:${x.id}`, x]))
+
+  const userOf = (res: JsonApiResource<CommentAttrs> | undefined): CommentUser => {
+    const uid = (res?.relationships?.user?.data as { id: string } | undefined)?.id
+    const u = uid ? lookup.get(`users:${uid}`) : undefined
     return {
-      id: c.id,
-      content: stripHtml(c.attributes.content),
-      createdAt: c.attributes['created-at'] ?? 0,
-      likes: c.attributes['liked-count'] ?? 0,
-      at: c.attributes['radio-timestamp'] ?? null,
-      user: {
-        id: userId ?? '',
-        nickname: (u?.attributes.nickname as string) ?? '机核用户',
-        avatar: (u?.attributes.thumb as string) ?? null,
-      },
-      replies: (replyRef ?? [])
-        .map((ref) => lookup.get(`comments:${ref.id}`))
-        .filter(Boolean)
-        .map((r) => {
-          const rr = r as JsonApiResource<CommentAttrs>
-          const rid = (rr.relationships?.user?.data as { id: string } | undefined)?.id
-          const ru = rid ? lookup.get(`users:${rid}`) : undefined
-          return {
-            id: rr.id,
-            content: stripHtml(rr.attributes.content),
-            createdAt: rr.attributes['created-at'] ?? 0,
-            likes: 0,
-            at: null,
-            user: {
-              id: rid ?? '',
-              nickname: (ru?.attributes.nickname as string) ?? '机核用户',
-              avatar: (ru?.attributes.thumb as string) ?? null,
-            },
-            replies: [],
-          } as CommentItem
-        }),
+      id: uid ?? '',
+      nickname: (u?.attributes.nickname as string) ?? '机核用户',
+      avatar: (u?.attributes.thumb as string) ?? null,
     }
   }
 
-  // 只取顶层评论（replies 走 included）
-  return arr.filter((c) => !(c.relationships?.parent?.data)).map(toItem)
+  // 子评论按 id 去重后挂到父评论下
+  const byId = new Map<string, JsonApiResource<CommentAttrs>>()
+  for (const top of arr) {
+    for (const ref of (top.relationships?.descendants?.data as { id: string }[] | undefined) ?? []) {
+      const res = lookup.get(`comments:${ref.id}`)
+      if (res) byId.set(res.id, res as JsonApiResource<CommentAttrs>)
+    }
+  }
+
+  const toReply = (res: JsonApiResource<CommentAttrs>): CommentItem => ({
+    id: res.id,
+    content: stripHtml(res.attributes.body),
+    createdAt: Date.parse(res.attributes['created-at'] ?? '') || 0,
+    likes: res.attributes['likes-count'] ?? 0,
+    at: res.attributes['radio-timestamp'] ?? null,
+    user: userOf(res),
+    depth: res.attributes.depth ?? 1,
+    fromAuthor: Boolean(res.attributes['liked-by-author']),
+    replyCount: res.attributes['descendants-count'] ?? 0,
+    replies: [],
+  })
+
+  const items = arr
+    .filter((c) => (c.attributes.depth ?? 0) === 0)
+    .map<CommentItem>((c) => {
+      const childIds = ((c.relationships?.descendants?.data as { id: string }[] | undefined) ?? [])
+        .map((ref) => byId.get(ref.id))
+        .filter(Boolean) as JsonApiResource<CommentAttrs>[]
+      const children = childIds.map(toReply)
+      // 父评论 + 直接子评论（depth 1）都已经按时间倒序返回，顺序本身是可信的
+      return {
+        id: c.id,
+        content: stripHtml(c.attributes.body),
+        createdAt: Date.parse(c.attributes['created-at'] ?? '') || 0,
+        likes: c.attributes['likes-count'] ?? 0,
+        at: c.attributes['radio-timestamp'] ?? null,
+        user: userOf(c),
+        depth: 0,
+        fromAuthor: Boolean(c.attributes['liked-by-author']),
+        replyCount: c.attributes['descendants-count'] ?? children.length,
+        replies: children,
+      }
+    })
+
+  return { items, total: (doc.meta?.['record-count'] as number | undefined) ?? items.length }
 }
 
 /** 相似节目（用于详情页「更多节目」）。接口偶发 5xx，所以静默降级为空数组。 */

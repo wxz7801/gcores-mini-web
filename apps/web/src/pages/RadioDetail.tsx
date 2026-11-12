@@ -21,6 +21,9 @@ import { toTrack } from '../components/RadioRow'
 
 type Tab = 'timeline' | 'intro' | 'comments'
 
+/** 评论一次拉多少条。接口上限 100（page[size] 超过就 400），手机上 30 条足够翻一屏多 */
+const COMMENT_PAGE_SIZE = 30
+
 export function RadioDetailPage() {
   const { id = '' } = useParams<{ id: string }>()
   const nav = useNavigate()
@@ -554,40 +557,98 @@ function Intro({ detail }: { detail: RadioDetail }) {
 function Comments({ radioId }: { radioId: string }) {
   const q = useQuery({
     queryKey: ['comments', radioId],
-    queryFn: () => fetchComments(radioId, 0, 30),
+    queryFn: () => fetchComments(radioId, 0, COMMENT_PAGE_SIZE),
     staleTime: 2 * 60 * 1000,
   })
-  const items = q.data ?? []
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
+  const items = q.data?.items ?? []
+  const total = q.data?.total ?? 0
+
+  const toggle = (id: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+
   if (q.isLoading) return <div className="px-4 py-8 text-center text-[15px] text-[#8a92a3]">加载评论…</div>
+  if (q.isError) return <div className="px-4 py-8 text-center text-[15px] text-[#8a92a3]">评论加载失败，稍后再试</div>
   if (!items.length) return <div className="px-4 py-10 text-center text-[15px] text-[#8a92a3]">还没有评论</div>
+
   return (
-    <div className="divide-y divide-line px-4">
-      {items.map((c) => (
-        <div key={c.id} className="flex gap-2.5 py-3">
-          {c.user.avatar ? (
-            <CoverImage src={coverUrl(c.user.avatar, 80)} className="h-10 w-10 shrink-0 rounded-full object-cover" />
-          ) : (
-            <div className="h-10 w-10 shrink-0 rounded-full bg-card" />
-          )}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 text-[13px]">
-              <span className="text-[#cfd3da]">{c.user.nickname}</span>
-              <span className="text-[#5c6371]">{relativeDate(c.createdAt)}</span>
-            </div>
-            <p className="mt-1 text-[15px] leading-relaxed text-[#e8eaef]">{c.content}</p>
-            {c.replies.length > 0 && (
-              <div className="mt-2 space-y-1.5 rounded-lg bg-card p-2">
-                {c.replies.slice(0, 3).map((r) => (
-                  <div key={r.id} className="text-[14px] leading-relaxed text-[#9aa2b1]">
-                    <span className="text-[#b6bcc8]">{r.user.nickname}：</span>
-                    {r.content}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+    <div className="px-4 pt-1">
+      {q.data && (
+        <div className="pb-1 text-[13px] text-[#5c6371]">
+          显示最新 {items.length} 条{total > items.length ? ` · 共约 ${total} 条` : ''}
         </div>
-      ))}
+      )}
+
+      <div className="divide-y divide-line">
+        {items.map((c) => {
+          const showAll = expanded.has(c.id)
+          // 默认折叠到 2 条，避免一条长楼把整屏占满
+          const shown = showAll ? c.replies : c.replies.slice(0, 2)
+          const hidden = c.replies.length - shown.length
+          return (
+            <div key={c.id} className="flex gap-2.5 py-3">
+              {c.user.avatar ? (
+                <CoverImage src={coverUrl(c.user.avatar, 80)} className="h-9 w-9 shrink-0 rounded-full object-cover" />
+              ) : (
+                <div className="h-9 w-9 shrink-0 rounded-full bg-card" />
+              )}
+
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 text-[13px]">
+                  <span className="truncate text-[#cfd3da]">{c.user.nickname}</span>
+                  {c.fromAuthor && (
+                    <span className="shrink-0 rounded bg-gcores/15 px-1.5 py-px text-[11px] text-gcores">作者</span>
+                  )}
+                  <span className="shrink-0 text-[#5c6371]">{relativeDate(c.createdAt)}</span>
+                </div>
+
+                <p className="mt-1 text-[15px] leading-relaxed break-words text-[#e8eaef]">{c.content}</p>
+
+                <div className="mt-1.5 flex items-center gap-4 text-[13px] text-[#5c6371]">
+                  {c.likes > 0 && <span>👍 {c.likes}</span>}
+                  {c.replyCount > 0 && <span>{c.replyCount} 条回复</span>}
+                </div>
+
+                {shown.length > 0 && (
+                  <div className="mt-2 space-y-2 rounded-lg bg-card px-3 py-2">
+                    {shown.map((r) => (
+                      <div
+                        key={r.id}
+                        className={cn('text-[14px] leading-relaxed break-words', r.depth >= 2 && 'pl-3')}
+                      >
+                        <span className="text-[#b6bcc8]">{r.user.nickname}</span>
+                        {r.fromAuthor && <span className="ml-1 text-[11px] text-gcores">作者</span>}
+                        <span className="text-[#5c6371]"> · {relativeDate(r.createdAt)}</span>
+                        <span className="text-[#9aa2b1]">：</span>
+                        <span className="text-[#9aa2b1]">{r.content}</span>
+                      </div>
+                    ))}
+                    {(hidden > 0 || (showAll && c.replies.length > 2)) && (
+                      <button
+                        type="button"
+                        onClick={() => toggle(c.id)}
+                        className="text-[13px] text-[#5b9dff]"
+                      >
+                        {hidden > 0 ? `展开其余 ${hidden} 条回复` : '收起'}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* 顶部已经报了总数，底部只在被截断时说明一句，不再重复总数 */}
+      {total > items.length && (
+        <div className="py-4 text-center text-[13px] text-[#5c6371]">只显示最新 {items.length} 条</div>
+      )}
     </div>
   )
 }
