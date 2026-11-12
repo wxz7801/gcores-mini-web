@@ -27,12 +27,15 @@ export function FloatingNav() {
     <nav
       aria-label="主导航"
       className={cn(
-        'fixed z-40 flex items-stretch gap-1 border-t border-outline-variant bg-surface-container',
-        // 横屏：内容区里的一条居中栏（舞台占了左侧，导航跟着内容走）
+        'z-40 flex items-stretch gap-1 border-t border-outline-variant bg-surface-container',
+        // 横屏：内容区里的一条居中栏（舞台占了左侧，导航跟着内容走）——fixed，贴着视口底
+        wide && 'fixed',
         // 竖屏：整宽贴底，和上面的播放条堆叠成「控制栏 / 底栏」两层，不再做成悬浮胶囊
         wide
           ? 'bottom-0 left-1/2 w-[480px] max-w-[52vw] -translate-x-1/2 rounded-t-xl px-2'
-          : 'inset-x-0 bottom-0 h-16 px-1.5 pb-[env(safe-area-inset-bottom)]',
+          // 竖屏的底栏是普通文档流的一层（不是 fixed）：上面的播放条要压在它上方，
+          // 两者按顺序堆叠，播放条就不需要再算 bottom 偏移
+          : 'relative w-full px-1.5 pb-[env(safe-area-inset-bottom)]',
       )}
     >
       {items.map((it) => (

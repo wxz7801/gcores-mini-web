@@ -1,17 +1,25 @@
 import { usePlayer } from '../store/player'
 import { CoverImage } from './CoverImage'
-import { PlayerControls } from './PlayerControls'
+import { formatTime } from '../lib/format'
 
 /**
- * 竖屏底部播放条：压在 navigation bar 上方的常驻一层。
+ * 竖屏底部迷你播放条（压在 navigation bar 上方）。
  *
- * 与横屏左侧舞台里的控制栏共用 PlayerControls（时间 + 进度 + 一行五宫格），
- * 这里在底部、那里跟着封面。分界仍只留一条 outline-variant
- * （M3：同一条边界不叠加底色变化 + 描边 + 阴影）。点上半条打开全屏播放页。
+ * 保持原生 App 播放条的样子：封面 + 标题 · DJ + 播放/下一集，
+ * 顶部再加一条细进度（M3 progress indicator：surface-variant 轨道 + primary 指示段），
+ * 不堆控制栏——完整的播放控制留给点开后的大播放页。
  */
 export function PlayerBar() {
   const current = usePlayer((s) => s.current)
+  const playing = usePlayer((s) => s.playing)
+  const position = usePlayer((s) => s.position)
+  const duration = usePlayer((s) => s.duration)
+  const loading = usePlayer((s) => s.loading)
+  const toggle = usePlayer((s) => s.toggle)
+  const next = usePlayer((s) => s.next)
   const setExpanded = usePlayer((s) => s.setExpanded)
+
+  const pct = duration > 0 ? Math.min(100, (position / duration) * 100) : 0
 
   // 没有在播时也给一条占位条：播放条永远钉在底部，不会因为「还没播」而消失
   if (!current) {
@@ -23,37 +31,65 @@ export function PlayerBar() {
   }
 
   return (
-    <div className="relative shrink-0 border-t border-outline-variant bg-surface-container-high">
-      {/* 上半条点开全屏播放页；下半条是播放控制 */}
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => setExpanded(true)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            setExpanded(true)
-          }
-        }}
-        aria-label={`打开播放页：${current.title}`}
-        className="flex w-full items-center gap-2 px-3 pt-2 pr-2"
-      >
-        <CoverImage src={current.cover} className="h-10 w-10 shrink-0 rounded-lg object-cover" />
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[15px] font-medium text-on-surface">{current.title}</div>
-          <div className="truncate text-[12px] text-on-surface-variant">
-            {current.djs?.length ? current.djs.join(' · ') : '机核'}
-          </div>
-        </div>
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-on-surface-variant">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-            <path d="M6 15l6-6 6 6" />
+    <button
+      type="button"
+      onClick={() => {
+        // 点迷你条 → 打开全屏播放页（而不是跳详情页）
+        setExpanded(true)
+      }}
+      className="relative block w-full border-t border-outline-variant bg-surface-container-high text-left"
+    >
+      {/* 顶部细进度：只作为状态指示，拖动的交互留在大播放页里，免得和整条点击冲突 */}
+      <span className="absolute inset-x-0 top-0 h-[3px] bg-surface-variant">
+        <span className="block h-full bg-primary" style={{ width: `${pct}%` }} />
+      </span>
+      <span className="mx-auto flex w-full max-w-[1440px] items-center gap-3 px-3 py-2.5 2xl:max-w-[1600px]">
+        <CoverImage src={current.cover} className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[15px] font-medium text-on-surface">{current.title}</span>
+          <span className="mt-1 block truncate text-[13px] text-on-surface-variant">
+            {loading ? '缓冲中…' : `${formatTime(position)} / ${formatTime(duration || current.duration)}`}
+          </span>
+        </span>
+        {/* 主操作 = M3 filled icon button；次操作 = standard icon button */}
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
+            e.stopPropagation()
+            toggle()
+          }}
+          onKeyDown={(e) => e.key === 'Enter' && (e.stopPropagation(), toggle())}
+          aria-label={playing ? '暂停' : '播放'}
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary active:brightness-110"
+        >
+          {playing ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="5" width="4" height="14" rx="1" />
+              <rect x="14" y="5" width="4" height="14" rx="1" />
+            </svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7 4l14 8-14 8z" />
+            </svg>
+          )}
+        </span>
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
+            e.stopPropagation()
+            next()
+          }}
+          aria-label="下一个"
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-on-surface-variant active:bg-on-surface/[0.1]"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M5 5l10 7-10 7z" />
+            <rect x="17" y="5" width="2.5" height="14" rx="1" />
           </svg>
         </span>
-      </div>
-      <div className="px-3 pb-1">
-        <PlayerControls seekHeight={36} />
-      </div>
-    </div>
+      </span>
+    </button>
   )
 }
