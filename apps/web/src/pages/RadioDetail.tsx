@@ -632,10 +632,7 @@ function Comments({ radioId }: { radioId: string }) {
                       // 回复本身多以中文开头，不能靠空白或省略号来分隔
                       <div
                         key={r.id}
-                        className={cn(
-                          'text-[14px] leading-relaxed break-words text-[#9aa2b1]',
-                          r.depth >= 2 && 'pl-3',
-                        )}
+                        className="text-[14px] leading-relaxed break-words text-[#9aa2b1]"
                       >
                         <span className="text-[#b6bcc8]">{r.user.nickname}</span>
                         {r.fromAuthor && <span className="ml-1 text-[11px] text-gcores">作者</span>}
