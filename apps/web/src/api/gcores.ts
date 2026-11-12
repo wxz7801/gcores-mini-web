@@ -572,25 +572,34 @@ export async function fetchComments(radioId: string, offset = 0, limit = 20): Pr
     }
   }
 
-  const toReply = (res: JsonApiResource<CommentAttrs>, topId: string): CommentItem => {
-    // 「A 回复 B」的 B 怎么来（机核这个接口的关系给得不稳，按可用程度退）：
-    //   1. parent 关系 -> 父评论的作者。注意只有真正回复了某条子评论时服务端才给，
-    //      直接回复楼层时 parent 常常是空的（见下）
-    //   2. root 关系 -> 根评论作者。只在 parent 指向的仍然是楼层本身时才有意义
-    //   3. 兜底：depth >= 2 说明一定是在回复某条回复，而 descendant 是平铺的、
-    //      没有树形结构可推，只能退成「上一条」。这是本次拿到的最接近的猜测，
-    //      所以只有在 1、2 都拿不到时才用
+  const toReply = (res: JsonApiResource<CommentAttrs>, topId: string, children: JsonApiResource<CommentAttrs>[]): CommentItem => {
+    // 「A 回复 B」的 B 怎么来（机核这个接口的关系给得不稳，按可靠程度退）：
+    //   1. parent 关系 -> 父评论。parent 指向的**就是楼层本身**时，说明 A 在回复楼层，
+    //      B 就是楼层作者。这是最常见的情况，也最容易写错。
+    //   2. parent 指向的是另一条回复 -> 用那条回复的作者。真正的「回复某人的回复」
+    //   3. parent 缺失但 root 给到了 -> 用 root 的作者（只在不是楼层作者时才有意义）
+    //   4. depth >= 2 且什么都没有 -> 平铺数组里没有树，只能退成「上一条」并标「（可能）」
     const top = arr.find((t) => t.id === topId)
     const topAuthor = userOf(top).nickname
     const parentId = (res.relationships?.parent?.data as { id: string } | undefined)?.id
-    const parentRes = parentId ? lookup.get(`comments:${parentId}`) : undefined
-    const parentName = parentRes ? userOf(parentRes as JsonApiResource<CommentAttrs>).nickname : null
     const rootId = (res.relationships?.root?.data as { id: string } | undefined)?.id
-    const rootName = rootId ? userOf(lookup.get(`comments:${rootId}`) as JsonApiResource<CommentAttrs>).nickname : null
 
     let replyToName: string | null = null
-    if (parentName && parentName !== topAuthor) replyToName = parentName
-    else if (rootName && rootName !== topAuthor) replyToName = rootName
+
+    if (parentId) {
+      if (parentId === topId) {
+        replyToName = topAuthor
+      } else {
+        // 父评论可能在 included 里，也可能就要在同组 children 里找
+        const p = lookup.get(`comments:${parentId}`) ?? children.find((c) => c.id === parentId)
+        replyToName = p ? userOf(p as JsonApiResource<CommentAttrs>).nickname : null
+      }
+    } else if (rootId && rootId !== topId) {
+      const r = lookup.get(`comments:${rootId}`)
+      const nm = r ? userOf(r as JsonApiResource<CommentAttrs>).nickname : null
+      if (nm && nm !== topAuthor) replyToName = nm
+    }
+
     // 占位昵称不算「找到了 B」——「回复 机核用户」既没信息量又到处乱窜
     if (replyToName === UNKNOWN_USER) replyToName = null
 
@@ -626,7 +635,7 @@ export async function fetchComments(radioId: string, offset = 0, limit = 20): Pr
         .map((ref) => byId.get(ref.id))
         .filter(Boolean) as JsonApiResource<CommentAttrs>[]
       const children = childIds.map((r, i) => {
-        const item = toReply(r, c.id)
+        const item = toReply(r, c.id, childIds)
         // depth>=2 却没有 parent/root 时，只能退成「上一条回复」，并在 UI 上标明是推测
         if (!item.replyToName && (r.attributes.depth ?? 0) >= 2) {
           const prev = prevAuthorOf(childIds, i)

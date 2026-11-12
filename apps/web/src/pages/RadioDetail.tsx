@@ -639,17 +639,20 @@ function Comments({ radioId }: { radioId: string }) {
                       >
                         <span className="text-[#b6bcc8]">{r.user.nickname}</span>
                         {r.fromAuthor && <span className="ml-1 text-[11px] text-gcores">作者</span>}
-                        {/* 「A 回复 B」：B 是 parent/root 关系给出的作者；拿不到时不标注，不瞎猜。
-                            猜出来的（parent 和 root 都为空、靠上一条推出来的）在后面标「可能」 */}
+                        {/* 「A ▸ B」用箭头表达回复关系，不再写「回复」两个字。
+                            两侧空格用 {' '} 显式给出：JSX 会把行首空白折叠掉，
+                            之前那个看着像空格的缝其实是两侧都没空格、整段被当成一个词排的 */}
                         {r.replyToName && (
                           <span className="text-[#5c6371]">
-                            {' ▸ 回复 '}
+                            {' ▸ '}
                             {r.replyToName}
                             {r.replyToGuess && <span className="text-[#46505f]">（可能）</span>}
+                            {' '}
                           </span>
                         )}
-                        {/* 冒号后紧跟正文，中间不留空格：中文正文前面多一个空格会显出「」 */}
-                        <span className="text-[#5c6371]"> · {relativeDate(r.createdAt)}：</span>
+                        {/* · 前面的空格靠「▸ 昵称」那段的尾随空格 + JSX 换行折叠共同给出，
+                            这里不能再自带前导空格，否则会叠成「霸王 · 」的双空格 */}
+                        <span className="text-[#5c6371]">· {relativeDate(r.createdAt)}：</span>
                         <span>{r.content}</span>
                       </div>
                     ))}
