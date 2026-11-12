@@ -516,17 +516,20 @@ const COMMENT_MAX_LIMIT = 100
  *    有效的子评论关系叫 **descendants**（还有 children / oldest-descendants）。
  * 2. 正文在 attributes.**body** 里，不是 content。
  * 3. created-at 是 ISO 字符串，不是时间戳，要 Date.parse。
- * 4. 顶层评论的 data 里没有 parent，但所有资源的关系对象都是 `{}`（连 user 都是 `{}`），
+ * 4. 顶层评论的 data 里没有 parent，但所有资源的关系对象都是 `{}`，
  *    所以只能靠 attributes.depth === 0 区分顶层，不能用 parent / children 判断。
- * 5. 子评论资源自己不带 user 关系，作者要靠遍历顶层评论的 descendants 累加。
- *    接口不支持嵌套 include 路径，所以按顶层批量拉，前端再组装成三层。
+ * 5. **必须写 `descendants.user`，光写 `user` 不够。**
+ *    服务端对 included 里的子评论不下发 user 关系（返回 `{}`），
+ *    只有顺着 descendants 再 include 一层 user，子评论的 user 才会回来。
+ *    只写 `user` 时子评论作者全是「机核用户」，而且不报错，很难发现。
  */
 export async function fetchComments(radioId: string, offset = 0, limit = 20): Promise<CommentsPage> {
   const doc = await request<JsonApiDoc<CommentAttrs>>(`/radios/${radioId}/comments`, {
     params: {
       'page[limit]': Math.min(limit, COMMENT_MAX_LIMIT),
       'page[offset]': offset,
-      include: 'user,descendants',
+      // 顺序别动：user 是顶层评论的作者，descendants.user 是回复的作者
+      include: 'user,descendants.user',
     },
   })
   const arr = Array.isArray(doc.data) ? doc.data : doc.data ? [doc.data] : []
