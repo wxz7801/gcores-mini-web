@@ -221,7 +221,8 @@ function stripHtml(s: string | null | undefined): string {
   if (!s) return ''
   const tmp = document.createElement('div')
   tmp.innerHTML = s
-  // cleanText：去掉零宽字符、把连续空白（含全角空格）压成一个
+  // cleanText：去掉零宽字符、把连续空白（含全角空格）压成一个。
+  // 内联元素之间原本没有换行，压掉之后不该出现「原 来」这种断层。
   return cleanText(tmp.textContent)
 }
 
@@ -492,6 +493,8 @@ export interface CommentItem {
    * 注意：拿不到时不要瞎猜，宁可留空。
    */
   replyToName: string | null
+  /** replyToName 是猜出来的（服务端没给 parent），UI 上要标「可能」之类的字样 */
+  replyToGuess: boolean
   replies: CommentItem[]
 }
 
@@ -511,6 +514,9 @@ export interface CommentsPage {
   /** 总条数（含回复），来自 meta.record-count */
   total: number
 }
+
+/** 拿不到昵称时的占位。别写成裸字符串，不然会被当成真的「B」用在「回复 X」里 */
+const UNKNOWN_USER = '机核用户'
 
 /** 机核评论接口的分页上限，写死了 page[size] 超过 100 就 400 */
 const COMMENT_MAX_LIMIT = 100
@@ -552,7 +558,7 @@ export async function fetchComments(radioId: string, offset = 0, limit = 20): Pr
     const u = uid ? lookup.get(`users:${uid}`) : undefined
     return {
       id: uid ?? '',
-      nickname: cleanText(u?.attributes.nickname as string) || '机核用户',
+      nickname: cleanText(u?.attributes.nickname as string) || UNKNOWN_USER,
       avatar: (u?.attributes.thumb as string) ?? null,
     }
   }
@@ -567,13 +573,27 @@ export async function fetchComments(radioId: string, offset = 0, limit = 20): Pr
   }
 
   const toReply = (res: JsonApiResource<CommentAttrs>, topId: string): CommentItem => {
-    // 「A 回复 B」：优先用 parent 关系的作者；parent 缺失时退到 root 关系的作者；
-    // 如果指向的就是当前这条顶层评论的作者，就不用标注了（本来就在楼层下面）
+    // 「A 回复 B」的 B 怎么来（机核这个接口的关系给得不稳，按可用程度退）：
+    //   1. parent 关系 -> 父评论的作者。注意只有真正回复了某条子评论时服务端才给，
+    //      直接回复楼层时 parent 常常是空的（见下）
+    //   2. root 关系 -> 根评论作者。只在 parent 指向的仍然是楼层本身时才有意义
+    //   3. 兜底：depth >= 2 说明一定是在回复某条回复，而 descendant 是平铺的、
+    //      没有树形结构可推，只能退成「上一条」。这是本次拿到的最接近的猜测，
+    //      所以只有在 1、2 都拿不到时才用
+    const top = arr.find((t) => t.id === topId)
+    const topAuthor = userOf(top).nickname
     const parentId = (res.relationships?.parent?.data as { id: string } | undefined)?.id
+    const parentRes = parentId ? lookup.get(`comments:${parentId}`) : undefined
+    const parentName = parentRes ? userOf(parentRes as JsonApiResource<CommentAttrs>).nickname : null
     const rootId = (res.relationships?.root?.data as { id: string } | undefined)?.id
-    const target = parentId ? lookup.get(`comments:${parentId}`) : rootId ? lookup.get(`comments:${rootId}`) : undefined
-    const targetName = target ? userOf(target as JsonApiResource<CommentAttrs>).nickname : null
-    const topAuthor = userOf(arr.find((t) => t.id === topId)).nickname
+    const rootName = rootId ? userOf(lookup.get(`comments:${rootId}`) as JsonApiResource<CommentAttrs>).nickname : null
+
+    let replyToName: string | null = null
+    if (parentName && parentName !== topAuthor) replyToName = parentName
+    else if (rootName && rootName !== topAuthor) replyToName = rootName
+    // 占位昵称不算「找到了 B」——「回复 机核用户」既没信息量又到处乱窜
+    if (replyToName === UNKNOWN_USER) replyToName = null
+
     return {
       id: res.id,
       content: stripHtml(res.attributes.body),
@@ -584,9 +604,19 @@ export async function fetchComments(radioId: string, offset = 0, limit = 20): Pr
       depth: res.attributes.depth ?? 1,
       fromAuthor: Boolean(res.attributes['liked-by-author']),
       replyCount: res.attributes['descendants-count'] ?? 0,
-      replyToName: targetName && targetName !== topAuthor ? targetName : null,
+      replyToName,
+      replyToGuess: false,
       replies: [],
     }
+  }
+
+  /** 上一条回复的作者：只用于 depth>=2 但 parent/root 都没给的情况 */
+  const prevAuthorOf = (list: JsonApiResource<CommentAttrs>[], i: number): string | null => {
+    for (let k = i - 1; k >= 0; k--) {
+      const nm = userOf(list[k]).nickname
+      if (nm) return nm
+    }
+    return null
   }
 
   const items = arr
@@ -595,7 +625,18 @@ export async function fetchComments(radioId: string, offset = 0, limit = 20): Pr
       const childIds = ((c.relationships?.descendants?.data as { id: string }[] | undefined) ?? [])
         .map((ref) => byId.get(ref.id))
         .filter(Boolean) as JsonApiResource<CommentAttrs>[]
-      const children = childIds.map((r) => toReply(r, c.id))
+      const children = childIds.map((r, i) => {
+        const item = toReply(r, c.id)
+        // depth>=2 却没有 parent/root 时，只能退成「上一条回复」，并在 UI 上标明是推测
+        if (!item.replyToName && (r.attributes.depth ?? 0) >= 2) {
+          const prev = prevAuthorOf(childIds, i)
+          if (prev) {
+            item.replyToName = prev
+            item.replyToGuess = true
+          }
+        }
+        return item
+      })
       // 父评论 + 直接子评论（depth 1）都已经按时间倒序返回，顺序本身是可信的
       return {
         id: c.id,
@@ -608,6 +649,7 @@ export async function fetchComments(radioId: string, offset = 0, limit = 20): Pr
         fromAuthor: Boolean(c.attributes['liked-by-author']),
         replyCount: c.attributes['descendants-count'] ?? children.length,
         replyToName: null,
+        replyToGuess: false,
         replies: children,
       }
     })

@@ -24,10 +24,15 @@ export function relativeDate(ts: number): string {
 /** 评论正文/昵称里夹带的零宽字符和连续空白，一起清掉 */
 export function cleanText(s: string | null | undefined): string {
   if (!s) return ''
-  return s
-    .replace(/[\u200b-\u200f\u202a-\u202e\u2060\ufeff]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
+  return (
+    s
+      .replace(/[\u200b-\u200f\u202a-\u202e\u2060\ufeff]/g, '')
+      // 只压「连续两个以上」的空白。别写成 \s+ → ' '：那会把单个换行也换成空格，
+      // 先碰到 "原来" 这种字会被拆成 "原 来"。单个换行交给渲染端处理。
+      .replace(/[ \t\u3000]{2,}/g, ' ')
+      .replace(/([ \t\u3000]*)\n+([ \t\u3000]*)/g, '\n')
+      .trim()
+  )
 }
 
 export function coverUrl(file: string | null | undefined, w: number, h = w): string {
