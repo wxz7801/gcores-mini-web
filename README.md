@@ -37,7 +37,7 @@ pnpm preview
 | `/playlist/:id` | 播单详情：方图封面 + 免费/期数/总时长 + 全部播放/全部入队 + 带序号的节目列表 |
 | `/audiobooks` | 有声书 61 部，一行 3（竖屏）/ 4~7（横屏），方图封面 |
 | `/album/:id` | 有声书详情 + 章节列表（`display-type≠audiobook` 的 id 会自动转去 `/playlist/:id`，反之亦然） |
-| `/radio/:id` | 节目详情：大播放按钮、收藏、简介 / 评论 / 时间轴、「更多节目」 |
+| `/radio/:id` | 节目详情：大播放按钮、收藏、简介 / 评论 / 时间轴、「更多节目」。评论一次拉 30 条、底部「加载更多」翻页，有回复的折叠成卡片（默认露 2 条可展开）。二级回复用 `A ▸ B · 时间：正文` 标出回复对象，不靠缩进区分层级 |
 | `/me` | 我的：会员信息 + **收听记录**（同一期多次收听已按 radioId 合并，取最新时间与最大进度，可续播）/ **我的收藏**（可收藏/取消） |
 | `/search` | 搜索：350ms 防抖、搜索历史（localStorage）、热词 |
 | `/queue` | 播放队列：卡片右下角「＋」攒进来的节目（zustand persist）。「播放全部」/点某一条会把它作为**自定义队列**交给播放器，之后上一集/下一集都在这条队列里走；卡片浮层里还有「立即播放」 |
@@ -105,6 +105,24 @@ pnpm preview
 
 ### 14. 播放进度刷新后恢复
 `store/player.ts` 里 `LAST_KEY = 'gcores.last-player.v1'`：`timeupdate` 每 5 秒落盘一次，`pagehide` 再落一次；启动时 `restoreLastSession()` 恢复节目、封面与进度（**不自动播放**，浏览器策略会拦截）。
+
+### 15. `media` 资源在 `included` 里的 type 是复数 `medias`
+详情接口 `GET /radios/{id}?include=media,…` 回来后，`included` 里媒体资源的 `type` 是 **`medias`**，而关系名才是单数 `media`。代码里一旦按 `media:${mediaId}` 去查就永远查不到，`media-type` 拿不到 → 退回默认的 `audio`。
+
+后果很隐蔽：**录音笔的 `is-free` 是 `true`（限免），但媒体本身是 `protected_audio`**。查不到 media 就会被当成免费直链，去拼 `alioss.gcores.com/uploads/audio/<uuid>.mp3`——这个地址对录音笔是 404（会员音频不在 alioss），于是「有会员权限也放不出来」。正确做法是解析 `media-type`，把 `isProtectedAudio` 透传到 `Track`，`protected_audio` 一律走 `POST /medias/protected/radios/{id}/listening-session`。
+
+同理，详情页的 GPASS 角标不能写成 `isRequirePrivilege && !isFree`：录音笔 `is-free=true` 会被判成免费。只看 `isRequirePrivilege`，与卡片 / 列表的判定保持一致。
+
+### 16. 评论接口的六个坑
+1. `include=replies` 会 400（`replies is not a valid relationship of comments`）。子评论的有效关系叫 **`descendants`**，另有 `children` / `oldest-descendants`。
+2. 正文在 `attributes.body`，不是 `content`；`created-at` 是 ISO 字符串（`2026-11-11T17:39:37.000+08:00`），要 `Date.parse`，否则算出来是 1970 年。
+3. 关系对象普遍是空 `{}`，不能靠 `parent` / `children` 判断顶层，只能用 `attributes.depth === 0`。
+4. **必须写 `descendants.user`**。光写 `include=user` 时，子评论的 `user` 是空对象，作者会全部退回占位昵称「机核用户」。
+5. **「A ▸ B」的 B 取 `descendants.parent.user`**：直接回复楼层时，接口给的 `parent` 是**楼层评论自身**（不是缺失），所以 `parent === 楼层 id` → B 就是楼层作者；`parent` 指向另一条回复时 → B 是那条回复的作者。`root` 在列表接口里基本是空对象，不能拿它兜底。
+6. `page[limit]` 上限 100，超了 400。前端一次拉 30 条，`useInfiniteQuery` 按 offset 翻页。
+
+### 17. `cleanText` 不要用 `\s+` 压缩空白
+`\s` 包含换行符，`.replace(/\s+/g, ' ')` 会把多行正文的换行也压成空格，渲染出来就是「原 来」这种断字。`lib/format.ts` 只压缩**连续两个以上**的 `[ \t\u3000]`，单个换行原样保留；同时清掉零宽字符（`\u200b-\u200f`、`\u202a-\u202e`、`\u2060`、`\ufeff`）。
 
 ## 5. 部署：反向代理
 
@@ -208,7 +226,7 @@ apps/web/src/
 ├── hooks/
 │   ├── useLayout.ts   # 横竖屏判断
 │   └── useRadioFeed.ts
-├── lib/format.ts      # coverUrl / formatTime / relativeDate
+├── lib/format.ts      # coverUrl / formatTime / relativeDate / cleanText(去零宽、压空白)
 ├── pages/             # 9 个页面
 └── store/player.ts    # zustand 播放器（单例 audio + 心跳 + Media Session）
 docs/
