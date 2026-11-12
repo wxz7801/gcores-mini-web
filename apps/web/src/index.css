@@ -181,3 +181,14 @@ html {
 * {
   scrollbar-width: thin;
 }
+
+/* 文档层兜底：任何时候都不给整页滚动条，滚动只发生在 #root 里的内容容器上。 */
+html,
+body {
+  overflow: hidden;
+  max-height: 100%;
+}
+
+#root {
+  overflow: hidden;
+}
