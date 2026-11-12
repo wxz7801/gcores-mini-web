@@ -21,6 +21,15 @@ export function relativeDate(ts: number): string {
   return `${d.getMonth() + 1}.${String(d.getDate()).padStart(2, '0')}`
 }
 
+/** 评论正文/昵称里夹带的零宽字符和连续空白，一起清掉 */
+export function cleanText(s: string | null | undefined): string {
+  if (!s) return ''
+  return s
+    .replace(/[\u200b-\u200f\u202a-\u202e\u2060\ufeff]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 export function coverUrl(file: string | null | undefined, w: number, h = w): string {
   if (!file) return ''
   if (file.startsWith('http')) return file

@@ -1,5 +1,6 @@
 import { request, requestWithBody, type JsonApiDoc, type JsonApiResource, type Query } from './client'
 import { getAuth } from './auth'
+import { cleanText } from '../lib/format'
 
 // ---------- 类型：只列出我们会用到的字段 ----------
 
@@ -220,7 +221,8 @@ function stripHtml(s: string | null | undefined): string {
   if (!s) return ''
   const tmp = document.createElement('div')
   tmp.innerHTML = s
-  return (tmp.textContent ?? '').replace(/\s+/g, ' ').trim()
+  // cleanText：去掉零宽字符、把连续空白（含全角空格）压成一个
+  return cleanText(tmp.textContent)
 }
 
 export async function fetchRadioDetail(id: string): Promise<RadioDetail> {
@@ -540,7 +542,7 @@ export async function fetchComments(radioId: string, offset = 0, limit = 20): Pr
     const u = uid ? lookup.get(`users:${uid}`) : undefined
     return {
       id: uid ?? '',
-      nickname: (u?.attributes.nickname as string) ?? '机核用户',
+      nickname: cleanText(u?.attributes.nickname as string) || '机核用户',
       avatar: (u?.attributes.thumb as string) ?? null,
     }
   }

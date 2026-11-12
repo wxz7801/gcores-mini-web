@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getAuth, subscribeAuth } from '../api/auth'
 import {
   fetchRadioDetail,
@@ -21,7 +21,7 @@ import { toTrack } from '../components/RadioRow'
 
 type Tab = 'timeline' | 'intro' | 'comments'
 
-/** 评论一次拉多少条。接口上限 100（page[size] 超过就 400），手机上 30 条足够翻一屏多 */
+/** 评论一次拉多少条。接口上限 100（page[size] 超过就 400）；一次 30 条，不够再点「加载更多」 */
 const COMMENT_PAGE_SIZE = 30
 
 export function RadioDetailPage() {
@@ -555,14 +555,24 @@ function Intro({ detail }: { detail: RadioDetail }) {
 }
 
 function Comments({ radioId }: { radioId: string }) {
-  const q = useQuery({
+  // 接口只支持 offset 分页（没有游标），用 useInfiniteQuery 一页页往后翻
+  const q = useInfiniteQuery({
     queryKey: ['comments', radioId],
-    queryFn: () => fetchComments(radioId, 0, COMMENT_PAGE_SIZE),
+    queryFn: ({ pageParam }) => fetchComments(radioId, pageParam, COMMENT_PAGE_SIZE),
+    initialPageParam: 0,
+    getNextPageParam: (last, all) => {
+      // 翻到底了（返回不满一页），或者已经够 total 条了，就不再请求
+      const loaded = all.reduce((n, p) => n + p.items.length, 0)
+      if (last.items.length < COMMENT_PAGE_SIZE) return undefined
+      if (last.total > 0 && loaded >= last.total) return undefined
+      return loaded
+    },
     staleTime: 2 * 60 * 1000,
   })
+
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
-  const items = q.data?.items ?? []
-  const total = q.data?.total ?? 0
+  const items = q.data?.pages.flatMap((p) => p.items) ?? []
+  const total = q.data?.pages.at(-1)?.total ?? 0
 
   const toggle = (id: string) =>
     setExpanded((prev) => {
@@ -576,13 +586,14 @@ function Comments({ radioId }: { radioId: string }) {
   if (q.isError) return <div className="px-4 py-8 text-center text-[15px] text-[#8a92a3]">评论加载失败，稍后再试</div>
   if (!items.length) return <div className="px-4 py-10 text-center text-[15px] text-[#8a92a3]">还没有评论</div>
 
+  const hasMore = Boolean(q.hasNextPage)
+
   return (
     <div className="px-4 pt-1">
-      {q.data && (
-        <div className="pb-1 text-[13px] text-[#5c6371]">
-          显示最新 {items.length} 条{total > items.length ? ` · 共约 ${total} 条` : ''}
-        </div>
-      )}
+      {/* 顶部只说明「已经加载了多少」；total 把回复也算进去了，对不上列表条数，所以叫「约」 */}
+      <div className="pb-1 text-[13px] text-[#5c6371]">
+        已加载 {items.length} 条{total > 0 ? ` · 共约 ${total} 条` : ''}
+      </div>
 
       <div className="divide-y divide-line">
         {items.map((c) => {
@@ -617,15 +628,20 @@ function Comments({ radioId }: { radioId: string }) {
                 {shown.length > 0 && (
                   <div className="mt-2 space-y-2 rounded-lg bg-card px-3 py-2">
                     {shown.map((r) => (
+                      // 嵌套的 flex：头部的「昵称 · 时间：」和其它内容分开，
+                      // 回复本身多以中文开头，不能靠空白或省略号来分隔
                       <div
                         key={r.id}
-                        className={cn('text-[14px] leading-relaxed break-words', r.depth >= 2 && 'pl-3')}
+                        className={cn(
+                          'text-[14px] leading-relaxed break-words text-[#9aa2b1]',
+                          r.depth >= 2 && 'pl-3',
+                        )}
                       >
                         <span className="text-[#b6bcc8]">{r.user.nickname}</span>
                         {r.fromAuthor && <span className="ml-1 text-[11px] text-gcores">作者</span>}
-                        <span className="text-[#5c6371]"> · {relativeDate(r.createdAt)}</span>
-                        <span className="text-[#9aa2b1]">：</span>
-                        <span className="text-[#9aa2b1]">{r.content}</span>
+                        {/* 冒号后紧跟正文，中间不留空格：中文正文前面多一个空格会显出「」 */}
+                        <span className="text-[#5c6371]"> · {relativeDate(r.createdAt)}：</span>
+                        <span>{r.content}</span>
                       </div>
                     ))}
                     {(hidden > 0 || (showAll && c.replies.length > 2)) && (
@@ -645,12 +661,21 @@ function Comments({ radioId }: { radioId: string }) {
         })}
       </div>
 
-      {/* 顶部已经报了总数，底部只在被截断时说明一句，不再重复总数 */}
-      {total > items.length && (
-        <div className="py-4 text-center text-[13px] text-[#5c6371]">只显示最新 {items.length} 条</div>
-      )}
+      <div className="py-5 text-center">
+        {hasMore ? (
+          <button
+            type="button"
+            onClick={() => q.fetchNextPage()}
+            disabled={q.isFetchingNextPage}
+            className="min-h-[44px] rounded-full bg-card px-5 text-[14px] text-[#cfd3da] active:bg-[#343a46] disabled:opacity-60"
+          >
+            {q.isFetchingNextPage ? '加载中…' : '加载更多评论'}
+          </button>
+        ) : (
+          <span className="text-[13px] text-[#5c6371]">已经到底了</span>
+        )}
+      </div>
     </div>
   )
 }
-
 export { RadioRow }
