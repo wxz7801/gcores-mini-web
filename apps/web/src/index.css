@@ -1,12 +1,56 @@
 @import 'tailwindcss';
+@import './styles/m3-tokens.css';
 
-@theme {
-  --color-ink: #0f1115;
-  --color-panel: #15181e;
-  --color-card: #20242c;
-  --color-line: #2c313c;
-  --color-gcores: #ff3e4d;
-  --color-timeline: #f5c542;
+/* 把 M3 语义角色注册成 Tailwind 颜色。变量本体定义在 styles/m3-tokens.css，
+   跟着 <html data-theme> 切换，所以这里必须用 var() 引用，不能写死色值。
+   bg-surface-container-high / text-on-surface-variant / border-outline-variant …
+   这类类名全部由下面这份映射生成。 */
+@theme inline {
+  --color-primary: var(--m3-primary);
+  --color-on-primary: var(--m3-on-primary);
+  --color-primary-container: var(--m3-primary-container);
+  --color-on-primary-container: var(--m3-on-primary-container);
+  --color-inverse-primary: var(--m3-inverse-primary);
+
+  --color-secondary: var(--m3-secondary);
+  --color-on-secondary: var(--m3-on-secondary);
+  --color-secondary-container: var(--m3-secondary-container);
+  --color-on-secondary-container: var(--m3-on-secondary-container);
+
+  --color-tertiary: var(--m3-tertiary);
+  --color-on-tertiary: var(--m3-on-tertiary);
+  --color-tertiary-container: var(--m3-tertiary-container);
+  --color-on-tertiary-container: var(--m3-on-tertiary-container);
+
+  --color-error: var(--m3-error);
+  --color-on-error: var(--m3-on-error);
+  --color-error-container: var(--m3-error-container);
+  --color-on-error-container: var(--m3-on-error-container);
+
+  --color-background: var(--m3-background);
+  --color-on-background: var(--m3-on-background);
+  --color-surface: var(--m3-surface);
+  --color-on-surface: var(--m3-on-surface);
+  --color-surface-dim: var(--m3-surface-dim);
+  --color-surface-bright: var(--m3-surface-bright);
+  --color-surface-container-lowest: var(--m3-surface-container-lowest);
+  --color-surface-container-low: var(--m3-surface-container-low);
+  --color-surface-container: var(--m3-surface-container);
+  --color-surface-container-high: var(--m3-surface-container-high);
+  --color-surface-container-highest: var(--m3-surface-container-highest);
+  --color-surface-variant: var(--m3-surface-variant);
+  --color-on-surface-variant: var(--m3-on-surface-variant);
+  --color-outline: var(--m3-outline);
+  --color-outline-variant: var(--m3-outline-variant);
+  --color-inverse-surface: var(--m3-inverse-surface);
+  --color-inverse-on-surface: var(--m3-inverse-on-surface);
+
+  /* 品牌发现色：时间轴金。机核红已升格为 primary，不再单独叫 gcores */
+  --color-timeline: var(--m3-timeline);
+  --color-on-timeline: var(--m3-on-timeline);
+  --color-timeline-container: var(--m3-timeline-container);
+  --color-on-timeline-container: var(--m3-on-timeline-container);
+
   --font-sans: -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
 }
 
@@ -14,7 +58,6 @@
   /* 横屏左侧禁区宽度，竖屏为 0。竖屏禁区：只要不点左侧 1/4 即可，
      横屏需要给舞台区让位。 */
   --dead-zone: 0px;
-  color-scheme: dark;
 }
 
 @media (min-width: 900px) and (orientation: landscape) {
@@ -28,8 +71,8 @@ body,
 #root {
   height: 100%;
   margin: 0;
-  background: var(--color-ink);
-  color: #e8eaef;
+  background: var(--m3-surface);
+  color: var(--m3-on-surface);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   overscroll-behavior-y: none;

@@ -12,6 +12,7 @@ import { cn } from '../lib/format'
 import { FmSection } from '../components/FmSection'
 import { SeriesTile } from '../components/SeriesTile'
 import { RECORDER_SEASON_IDS } from '../api/series'
+import { PageHeader } from '../components/AppShell'
 
 const TABS = [
   { id: 'latest' as const, label: '最新' },
@@ -127,14 +128,14 @@ export function DiscoverPage() {
 
   return (
     <div className="pb-6">
-      <header className="sticky top-0 z-10 bg-ink/95 pt-[max(12px,env(safe-area-inset-top))] pb-1 backdrop-blur">
+      <PageHeader>
         <div className="flex items-center gap-2 px-4">
-          <h1 className="flex-1 text-[28px] leading-none font-bold text-white">播客</h1>
+          <h1 className="flex-1 text-[28px] leading-none font-bold text-on-surface">播客</h1>
           <button
             type="button"
             onClick={() => nav('/search')}
             aria-label="搜索节目"
-            className="tap flex h-11 w-11 items-center justify-center rounded-full text-[#e8eaef] active:bg-card"
+            className="tap flex h-11 w-11 items-center justify-center rounded-full text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="11" cy="11" r="7" />
@@ -145,7 +146,7 @@ export function DiscoverPage() {
             type="button"
             onClick={() => nav('/queue')}
             aria-label="播放队列"
-            className="tap relative flex h-11 w-11 items-center justify-center rounded-full text-[#e8eaef] active:bg-card"
+            className="tap relative flex h-11 w-11 items-center justify-center rounded-full text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M4 7h16M4 12h16M4 17h10" />
@@ -161,30 +162,30 @@ export function DiscoverPage() {
               onClick={() => setTab(t.id)}
               aria-pressed={tab === t.id}
               className={cn(
-                'relative flex min-h-[44px] items-center pb-1 text-[18px] transition-colors',
-                tab === t.id ? 'font-bold text-white' : 'text-[#8a92a3]',
+                'relative flex min-h-[48px] items-center pb-1 text-[16px] transition-colors',
+                tab === t.id ? 'font-bold text-primary' : 'text-on-surface-variant hover:text-on-surface',
               )}
             >
               {t.label}
-              {tab === t.id && <span className="absolute inset-x-0 -bottom-px h-[2px] rounded bg-gcores" />}
+              {tab === t.id && <span className="absolute inset-x-0 -bottom-px h-[3px] rounded-t-full bg-primary" />}
             </button>
           ))}
         </div>
-      </header>
+      </PageHeader>
 
 
       {!getAuth() && (
-        <div className="mx-4 mt-3 flex items-center gap-3 rounded-xl bg-card px-3 py-2.5">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-timeline/15 text-timeline">
+        <div className="mx-4 mt-3 flex items-center gap-3 rounded-xl bg-surface-container-high px-3 py-2.5">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-timeline-container text-on-timeline-container">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z" />
             </svg>
           </span>
           <button type="button" onClick={() => nav('/login')} className="flex-1 text-left">
-            <div className="text-[15px] text-white">登录后收听 GPASS 会员节目</div>
-            <div className="mt-0.5 text-[13px] text-[#8a92a3]">扫码登录 · 进度与收藏自动同步</div>
+            <div className="text-[15px] text-on-surface">登录后收听 GPASS 会员节目</div>
+            <div className="mt-0.5 text-[13px] text-on-surface-variant">扫码登录 · 进度与收藏自动同步</div>
           </button>
-          <span className="text-[#5c6371]">›</span>
+          <span className="text-outline">›</span>
         </div>
       )}
 
@@ -205,39 +206,39 @@ export function DiscoverPage() {
             </div>
           )}
           {!getAuth() && (
-            <div className="mx-4 mt-5 flex items-center gap-3 rounded-xl bg-timeline/10 px-3 py-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-timeline/15 text-timeline">
+            <div className="mx-4 mt-5 flex items-center gap-3 rounded-xl bg-surface-container-high px-3 py-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-timeline-container text-on-timeline-container">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z" />
                 </svg>
               </span>
-              <div className="flex-1 text-[14px] leading-relaxed text-[#b8bfcb]">
+              <div className="flex-1 text-[14px] leading-relaxed text-on-surface-variant">
                 会员节目只能试听；扫码登录已经有 GPASS 的账号后可以整段收听。
               </div>
               <button
                 type="button"
                 onClick={() => nav('/login')}
-                className="h-9 shrink-0 rounded-full bg-timeline px-4 text-[14px] font-medium text-black"
+                className="h-9 shrink-0 rounded-full bg-primary px-4 text-[14px] font-medium text-on-primary"
               >
                 登录
               </button>
             </div>
           )}
-          {gp.isLoading && <div className="px-4 py-10 text-center text-[15px] text-[#8a92a3]">正在挑会员节目…</div>}
+          {gp.isLoading && <div className="px-4 py-10 text-center text-[15px] text-on-surface-variant">正在挑会员节目…</div>}
           {!gp.isLoading && gpItems.length === 0 && (
-            <div className="py-16 text-center text-[15px] text-[#5c6371]">没找到会员节目</div>
+            <div className="py-16 text-center text-[15px] text-on-surface-variant">没找到会员节目</div>
           )}
           {gp.hasNextPage && (
             <button
               type="button"
               onClick={() => void gp.fetchNextPage()}
-              className="mx-auto mt-6 mb-2 block h-12 rounded-full bg-card px-8 text-[15px] text-[#cfd3da]"
+              className="mx-auto mt-6 mb-2 block h-12 rounded-full px-8 text-[15px] font-medium text-primary hover:bg-primary/[0.08] active:bg-primary/[0.1]"
             >
               {gp.isFetchingNextPage ? '正在翻找更多会员节目…' : '加载更多'}
             </button>
           )}
           {!gp.hasNextPage && gpItems.length > 0 && (
-            <div className="py-8 text-center text-[13px] text-[#5c6371]">已经到底了 · 共 {gpItems.length} 期会员节目</div>
+            <div className="py-8 text-center text-[13px] text-on-surface-variant">已经到底了 · 共 {gpItems.length} 期会员节目</div>
           )}
         </>
       ) : (
@@ -252,7 +253,7 @@ export function DiscoverPage() {
         <button
           type="button"
           onClick={() => void q.fetchNextPage()}
-          className="mx-auto mt-6 mb-2 block h-12 rounded-full bg-card px-8 text-[15px] text-[#cfd3da]"
+          className="mx-auto mt-6 mb-2 block h-12 rounded-full px-8 text-[15px] font-medium text-primary hover:bg-primary/[0.08] active:bg-primary/[0.1]"
         >
           {q.isFetchingNextPage ? '加载中…' : '加载更多'}
         </button>
@@ -261,10 +262,10 @@ export function DiscoverPage() {
       <ResumeRail />
 
       {!isGpassTab && tab !== 'fm' && !q.hasNextPage && items.length > 0 && (
-        <div className="py-8 text-center text-[13px] text-[#5c6371]">已经到底了 · 共 {items.length} 期</div>
+        <div className="py-8 text-center text-[13px] text-on-surface-variant">已经到底了 · 共 {items.length} 期</div>
       )}
       {!isGpassTab && tab !== 'fm' && !q.isLoading && items.length === 0 && (
-        <div className="py-16 text-center text-[15px] text-[#5c6371]">
+        <div className="py-16 text-center text-[15px] text-on-surface-variant">
           {tab === 'imported' ? '这一页还没加载到入驻播客，拉一下「加载更多」' : '暂无节目'}
         </div>
       )}
@@ -278,10 +279,10 @@ function SkeletonGrid() {
     <div className="mt-4 grid grid-cols-1 gap-x-4 gap-y-6 px-4 sm:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className="animate-pulse">
-          <div className="aspect-video w-full rounded-xl bg-card" />
-          <div className="mt-2 h-3 w-1/3 rounded bg-card" />
-          <div className="mt-2 h-4 w-full rounded bg-card" />
-          <div className="mt-1.5 h-4 w-2/3 rounded bg-card" />
+          <div className="aspect-video w-full rounded-xl bg-surface-container-highest" />
+          <div className="mt-2 h-3 w-1/3 rounded bg-surface-container-highest" />
+          <div className="mt-2 h-4 w-full rounded bg-surface-container-highest" />
+          <div className="mt-1.5 h-4 w-2/3 rounded bg-surface-container-highest" />
         </div>
       ))}
     </div>
@@ -332,8 +333,8 @@ function ResumeRail() {
   return (
     <section className="mt-4">
       <div className="mb-2 flex items-center justify-between px-4">
-        <h2 className="text-[17px] font-bold text-white">接着听</h2>
-        <button type="button" onClick={() => nav('/me')} className="text-[14px] text-[#8a92a3]">
+        <h2 className="text-[17px] font-bold text-on-surface">接着听</h2>
+        <button type="button" onClick={() => nav('/me')} className="text-[14px] text-on-surface-variant">
           全部记录
         </button>
       </div>
@@ -354,19 +355,20 @@ function ResumeRail() {
                   src={coverUrl(r.radio.thumb || r.radio.cover, 440, 248)}
                   className="aspect-video w-full rounded-xl object-cover"
                 />
-                <span className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/20">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur">
+                <span className="absolute inset-0 flex items-center justify-center rounded-xl">
+                  {/* 媒体覆盖层：M3 允许的局部例外，用不透明的 scrim 保证图标在任意封面上都看得清 */}
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--m3-media-overlay)] text-inverse-on-surface">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M7 4l14 8-14 8z" />
                     </svg>
                   </span>
                 </span>
-                <span className="absolute inset-x-2 bottom-2 h-[3px] overflow-hidden rounded-full bg-black/45">
-                  <span className="block h-full bg-gcores" style={{ width: `${pct}%` }} />
+                <span className="absolute inset-x-2 bottom-2 h-[3px] overflow-hidden rounded-full bg-[var(--m3-scrim)]">
+                  <span className="block h-full bg-primary" style={{ width: `${pct}%` }} />
                 </span>
               </button>
-              <div className="mt-1.5 line-clamp-2 text-[15px] leading-snug text-[#e8eaef]">{r.radio.title}</div>
-              <div className="mt-0.5 text-[13px] text-[#7d8594]">听到 {formatTime(r.progress)}</div>
+              <div className="mt-1.5 line-clamp-2 text-[15px] leading-snug text-on-surface">{r.radio.title}</div>
+              <div className="mt-0.5 text-[13px] text-on-surface-variant">听到 {formatTime(r.progress)}</div>
             </div>
           )
         })}

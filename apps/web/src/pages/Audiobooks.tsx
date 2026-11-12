@@ -29,9 +29,9 @@ export function AudiobooksPage() {
 
   return (
     <div className="pb-6">
-      <header className="sticky top-0 z-20 bg-ink/95 px-4 pt-[max(16px,env(safe-area-inset-top))] pb-3 backdrop-blur">
-        <h1 className="text-[28px] leading-none font-bold text-white">有声书</h1>
-        <p className="mt-1.5 text-[14px] text-[#8a92a3]">GPASS 会员专享 · 共 {total || '—'} 部</p>
+      <header className="sticky top-0 z-20 border-b border-outline-variant bg-surface-container-low px-4 pt-[max(16px,env(safe-area-inset-top))] pb-3">
+        <h1 className="text-[28px] leading-none font-bold text-on-surface">有声书</h1>
+        <p className="mt-1.5 text-[14px] text-on-surface-variant">GPASS 会员专享 · 共 {total || '—'} 部</p>
       </header>
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-7 px-4 sm:grid-cols-3 sm:gap-x-5 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
@@ -44,13 +44,13 @@ export function AudiobooksPage() {
         <button
           type="button"
           onClick={() => void q.fetchNextPage()}
-          className="mx-auto mt-8 block h-12 rounded-full bg-card px-8 text-[15px] text-[#cfd3da]"
+          className="mx-auto mt-8 block h-12 rounded-full border border-outline px-8 text-[15px] text-on-surface hover:bg-on-surface/[0.08]"
         >
           {q.isFetchingNextPage ? '加载中…' : '加载更多'}
         </button>
       )}
-      {q.isLoading && <div className="px-4 py-10 text-center text-[15px] text-[#8a92a3]">加载中…</div>}
-      {q.isError && <div className="px-4 py-10 text-center text-[15px] text-[#8a92a3]">加载失败，请稍后重试</div>}
+      {q.isLoading && <div className="px-4 py-10 text-center text-[15px] text-on-surface-variant">加载中…</div>}
+      {q.isError && <div className="px-4 py-10 text-center text-[15px] text-on-surface-variant">加载失败，请稍后重试</div>}
     </div>
   )
 }
@@ -60,18 +60,18 @@ export function AlbumTile({ album, onOpen }: { album: AlbumItem; onOpen: () => v
   // 不要用 3:4 容器去裁切（会把书名和插图上下切掉）。
   return (
     <button type="button" onClick={onOpen} className="group block text-left [container-type:inline-size]">
-      <div className="relative w-full overflow-hidden rounded-xl bg-card" style={{ aspectRatio: '1 / 1' }}>
+      <div className="relative w-full overflow-hidden rounded-xl bg-surface-container-high" style={{ aspectRatio: '1 / 1' }}>
         <CoverImage src={coverUrl(album.cover, 360, 360)} className="h-full w-full object-cover" />
         {album.isRequirePrivilege && (
-          <span className="absolute bottom-1.5 left-1.5 rounded bg-[#8b1e26]/90 px-1.5 py-0.5 text-[12px] leading-none font-bold text-white">
+          <span className="absolute bottom-1.5 left-1.5 rounded-md bg-timeline-container px-1.5 py-0.5 text-[12px] leading-none font-bold text-on-timeline-container">
             GPASS
           </span>
         )}
       </div>
-      <div className="mt-2 line-clamp-2 min-h-[34px] text-[15px] leading-snug text-[#e8eaef] max-sm:text-[13px]">
+      <div className="mt-2 line-clamp-2 min-h-[34px] text-[15px] leading-snug text-on-surface max-sm:text-[13px]">
         {album.title}
       </div>
-      <div className="mt-1 text-[13px] text-[#7d8594]">
+      <div className="mt-1 text-[13px] text-on-surface-variant">
         {album.isRequirePrivilege ? '会员专享' : album.isFree ? '免费' : `${album.credit} 积分`}
         {album.count ? ` · ${album.count} ${album.itemsLabel}` : ''}
       </div>
@@ -108,31 +108,31 @@ export function AlbumDetailPage() {
     <div className="pb-6">
       {/* 给 NowPlaying 顶部提示条留出高度，避免压住标题 */}
       <div className="pointer-events-none h-11" aria-hidden="true" />
-      <header className="sticky top-0 z-20 -mt-11 flex items-center gap-2 bg-ink/95 px-2 pt-[max(8px,env(safe-area-inset-top))] pb-2 backdrop-blur">
-        <button type="button" onClick={() => nav(-1)} className="tap shrink-0 text-[#e8eaef]" aria-label="返回">
+      <header className="sticky top-0 z-20 -mt-11 flex items-center gap-2 border-b border-outline-variant bg-surface-container-low px-2 pt-[max(8px,env(safe-area-inset-top))] pb-2">
+        <button type="button" onClick={() => nav(-1)} className="tap shrink-0 text-on-surface" aria-label="返回">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M15 5l-7 7 7 7" />
           </svg>
         </button>
-        <h1 className="min-w-0 flex-1 truncate text-[18px] font-bold text-white">{title || '\u00a0'}</h1>
+        <h1 className="min-w-0 flex-1 truncate text-[18px] font-bold text-on-surface">{title || '\u00a0'}</h1>
       </header>
 
       {/* 头图按 3:4 完整显示不做裁切；封面右侧只放标题和标签，简介整段落在封面下方 */}
       <div className="flex items-start gap-4 px-4 pt-2">
-        <div className="w-[110px] shrink-0 overflow-hidden rounded-xl bg-card" style={{ aspectRatio: '3 / 4' }}>
+        <div className="w-[110px] shrink-0 overflow-hidden rounded-xl bg-surface-container-high" style={{ aspectRatio: '3 / 4' }}>
           {album?.cover && <CoverImage src={coverUrl(album.cover, 330, 440)} className="h-full w-full object-cover" />}
         </div>
         <div className="min-w-0 flex-1 pt-0.5">
-          <h1 className="text-[17px] leading-snug font-bold text-white">
-            {album?.title ?? (info.isLoading ? <span className="text-[#5c6371]">加载中…</span> : '有声书')}
+          <h1 className="text-[17px] leading-snug font-bold text-on-surface">
+            {album?.title ?? (info.isLoading ? <span className="text-outline">加载中…</span> : '有声书')}
           </h1>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {album?.isRequirePrivilege && (
-              <span className="rounded bg-[#8b1e26]/80 px-1.5 py-0.5 text-[12px] text-white">GPASS 专享</span>
+              <span className="rounded-md bg-timeline-container px-1.5 py-0.5 text-[12px] text-on-timeline-container">GPASS 专享</span>
             )}
-            <span className="rounded bg-card px-1.5 py-0.5 text-[12px] text-[#a3aab8]">{items.length} 章</span>
+            <span className="rounded-md bg-surface-container-highest px-1.5 py-0.5 text-[12px] text-on-surface-variant">{items.length} 章</span>
             {album?.subscriptions ? (
-              <span className="rounded bg-card px-1.5 py-0.5 text-[12px] text-[#a3aab8]">{album.subscriptions} 人订阅</span>
+              <span className="rounded-md bg-surface-container-highest px-1.5 py-0.5 text-[12px] text-on-surface-variant">{album.subscriptions} 人订阅</span>
             ) : null}
           </div>
         </div>
@@ -140,7 +140,7 @@ export function AlbumDetailPage() {
 
       {/* 简介整段放在封面下面，不再挤在标题右边被裁成 3 行 */}
       {album?.description && (
-        <p className="mt-4 px-4 text-[15px] leading-[1.75] whitespace-pre-line break-words text-[#a3aab8]">
+        <p className="mt-4 px-4 text-[15px] leading-[1.75] whitespace-pre-line break-words text-on-surface-variant">
           {album.description}
         </p>
       )}
@@ -155,7 +155,7 @@ export function AlbumDetailPage() {
             }
             if (items[0]) void playTrack(toTrack(items[0]), items.map((r) => toTrack(r)))
           }}
-          className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-gcores text-[16px] font-medium text-white"
+          className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-primary text-[16px] font-medium text-on-primary hover:brightness-110 active:brightness-95"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             {anyCurrent && playing ? (
@@ -174,17 +174,17 @@ export function AlbumDetailPage() {
       <div className="mt-4 px-2">
         {items.map((r, i) => (
           <div key={r.id} className="flex items-start">
-            <span className="w-8 shrink-0 pt-4 text-center text-[13px] text-[#5c6371]">
-              {r.id === currentId ? <span className="text-gcores">▶</span> : i + 1}
+            <span className="w-8 shrink-0 pt-4 text-center text-[13px] text-outline">
+              {r.id === currentId ? <span className="text-primary">▶</span> : i + 1}
             </span>
-            <div className={cn('min-w-0 flex-1', r.id === currentId && 'bg-gcores/5')}>
+            <div className={cn('min-w-0 flex-1', r.id === currentId && 'bg-primary-container/40')}>
               <RadioRow radio={r} queue={items} />
             </div>
           </div>
         ))}
       </div>
 
-      {chapters.isLoading && <div className="px-4 py-10 text-center text-[15px] text-[#8a92a3]">加载中…</div>}
+      {chapters.isLoading && <div className="px-4 py-10 text-center text-[15px] text-on-surface-variant">加载中…</div>}
     </div>
   )
 }

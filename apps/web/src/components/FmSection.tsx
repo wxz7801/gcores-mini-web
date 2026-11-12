@@ -22,17 +22,17 @@ export function FmSection() {
   })
   const items = useMemo(() => q.data?.items ?? [], [q.data])
 
-  if (q.isLoading) return <div className="px-4 py-6 text-[15px] text-[#8a92a3]">机核 FM 加载中…</div>
+  if (q.isLoading) return <div className="px-4 py-6 text-[15px] text-on-surface-variant">机核 FM 加载中…</div>
   if (!items.length) return null
 
   return (
     <section>
       <div className="mb-3 px-4">
-        <h2 className="flex items-center gap-2 text-[20px] font-bold text-white">
+        <h2 className="flex items-center gap-2 text-[20px] font-bold text-on-surface">
           机核 FM
-          <span className="rounded bg-[#2b4a6e] px-1.5 py-0.5 text-[12px] leading-none font-medium text-[#7fc0ff]">LIVE</span>
+          <span className="rounded-md bg-error-container px-1.5 py-0.5 text-[12px] leading-none font-medium text-on-error-container">LIVE</span>
         </h2>
-        <p className="mt-1 text-[13px] text-[#7d8594]">循环陪伴流 · HLS 分片 · 共 {items.length} 期</p>
+        <p className="mt-1 text-[13px] text-on-surface-variant">循环陪伴流 · HLS 分片 · 共 {items.length} 期</p>
       </div>
       <ul className="space-y-2 px-4">
         {items.map((r, i) => (
@@ -52,7 +52,7 @@ function FmRow({ radio, queue, first }: { radio: RadioListItem; queue: RadioList
   const isCurrent = current?.radioId === radio.id
 
   return (
-    <li className={cn('flex items-center gap-3 rounded-2xl p-2.5', isCurrent ? 'bg-card ring-1 ring-gcores/60' : 'bg-panel')}>
+    <li className={cn('flex items-center gap-3 rounded-xl p-2.5', isCurrent ? 'bg-secondary-container' : 'bg-surface-container-high')}>
       <button
         type="button"
         onClick={() => nav(`/radio/${radio.id}`)}
@@ -69,15 +69,21 @@ function FmRow({ radio, queue, first }: { radio: RadioListItem; queue: RadioList
         onClick={() => nav(`/radio/${radio.id}`)}
         className="min-w-0 flex-1 text-left"
       >
-        <div className={cn('line-clamp-2 leading-snug text-white', first ? 'text-[17px] font-bold' : 'text-[15px] font-semibold')}>
+        <div
+          className={cn(
+            'line-clamp-2 leading-snug',
+            isCurrent ? 'text-on-secondary-container' : 'text-on-surface',
+            first ? 'text-[17px] font-bold' : 'text-[15px] font-semibold',
+          )}
+        >
           {radio.title}
         </div>
-        <div className="mt-1 flex items-center gap-2 text-[13px] text-[#8a92a3]">
+        <div className={cn('mt-1 flex items-center gap-2 text-[13px]', isCurrent ? 'text-on-secondary-container/80' : 'text-on-surface-variant')}>
           <span>{formatTime(radio.duration)}</span>
           <span>·</span>
           <span>{relativeDate(radio.publishedAt)}</span>
           {first && (
-            <span className="rounded bg-[#2b4a6e] px-1 py-px text-[11px] leading-none text-[#7fc0ff]">陪伴流</span>
+            <span className="rounded bg-error-container px-1 py-px text-[11px] leading-none text-on-error-container">陪伴流</span>
           )}
         </div>
       </button>
@@ -87,7 +93,9 @@ function FmRow({ radio, queue, first }: { radio: RadioListItem; queue: RadioList
         aria-label={isCurrent && playing ? '暂停' : '播放'}
         className={cn(
           'flex h-12 w-12 shrink-0 items-center justify-center rounded-full',
-          isCurrent && playing ? 'bg-gcores text-white' : 'bg-white/90 text-[#15181e]',
+          isCurrent && playing
+            ? 'bg-primary text-on-primary'
+            : 'bg-primary text-on-primary hover:brightness-110 active:brightness-95',
         )}
       >
         {isCurrent && playing ? (

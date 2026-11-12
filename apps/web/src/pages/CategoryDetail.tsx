@@ -25,14 +25,19 @@ export function CategoryDetailPage() {
 
   return (
     <div className="pb-4">
-      <header className="sticky top-0 z-10 flex items-center gap-2 bg-ink/95 px-2 pt-[max(8px,env(safe-area-inset-top))] pb-2 backdrop-blur">
-        <button type="button" onClick={() => nav(-1)} className="tap shrink-0 text-[#e8eaef]" aria-label="返回">
+      <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-outline-variant bg-surface-container-low px-2 pt-[max(8px,env(safe-area-inset-top))] pb-2">
+        <button
+          type="button"
+          onClick={() => nav(-1)}
+          className="tap flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
+          aria-label="返回"
+        >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M15 5l-7 7 7 7" />
           </svg>
         </button>
-        <h1 className="min-w-0 flex-1 truncate text-[18px] font-bold text-white">{name}</h1>
-        <span className="pr-2 text-[13px] text-[#8a92a3]">{q.data?.pages[0]?.total ?? ''}</span>
+        <h1 className="min-w-0 flex-1 truncate text-[18px] font-bold text-on-surface">{name}</h1>
+        <span className="pr-2 text-[13px] text-on-surface-variant">{q.data?.pages[0]?.total ?? ''}</span>
       </header>
 
       <div className="px-1">
@@ -46,14 +51,14 @@ export function CategoryDetailPage() {
           type="button"
           onClick={() => void q.fetchNextPage()}
           disabled={q.isFetchingNextPage}
-          className="mx-auto mt-3 block h-11 rounded-full bg-card px-6 text-[15px] text-[#cfd3da]"
+          className="mx-auto mt-3 block h-12 rounded-full border border-outline px-6 text-[15px] text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
         >
           {q.isFetchingNextPage ? '加载中…' : '加载更多'}
         </button>
       )}
-      {q.isLoading && <div className="px-4 py-10 text-center text-[15px] text-[#8a92a3]">加载中…</div>}
+      {q.isLoading && <div className="px-4 py-10 text-center text-[15px] text-on-surface-variant">加载中…</div>}
       {!q.isLoading && !items.length && (
-        <div className="px-4 py-10 text-center text-[15px] text-[#8a92a3]">这个栏目还没有节目</div>
+        <div className="px-4 py-10 text-center text-[15px] text-on-surface-variant">这个栏目还没有节目</div>
       )}
     </div>
   )

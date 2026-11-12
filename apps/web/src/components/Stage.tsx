@@ -36,11 +36,11 @@ function StagePanel() {
   if (!current) {
     return (
       <div className="stage-interactive flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#3a4150" strokeWidth="1.4" aria-hidden="true">
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true" className="text-outline-variant">
           <rect x="3" y="3" width="18" height="18" rx="5" />
           <path d="M9 8.5v7l6-3.5z" />
         </svg>
-        <div className="text-[14px] leading-relaxed text-[#5c6371]">
+        <div className="text-[14px] leading-relaxed text-on-surface-variant">
           左侧留给车机 / 支架上的实体控件
           <br />
           播放电台后这里会显示封面与播放控制
@@ -75,13 +75,13 @@ function StagePanel() {
               父容器是 flex 项，直接给 img 百分比高度会被撑破，所以用绝对定位兜住 */}
           <CoverImage
             src={current.cover}
-            className="absolute inset-0 m-auto max-h-full max-w-full rounded-2xl object-contain shadow-[0_16px_40px_rgba(0,0,0,.5)]"
+            className="absolute inset-0 m-auto max-h-full max-w-full rounded-xl object-contain"
             eager
           />
         </div>
         <div className="mt-3 shrink-0">
-          <div className="line-clamp-2 text-[19px] leading-snug font-semibold text-white">{current.title}</div>
-          <div className="mt-1 truncate text-[13px] text-[#8a92a3]">
+          <div className="line-clamp-2 text-[19px] leading-snug font-semibold text-on-surface">{current.title}</div>
+          <div className="mt-1 truncate text-[13px] text-on-surface-variant">
             {current.djs?.length ? current.djs.join(' · ') : '机核'}
             {current.category ? ` · ${current.category}` : ''}
           </div>
@@ -90,8 +90,8 @@ function StagePanel() {
 
       {/* 下：进度 + 控制栏（对齐机核 App 播放条） */}
       <div className="mt-3 shrink-0">
-        <div className="mb-1 flex items-center justify-between font-mono text-[13px] tabular-nums text-[#8a92a3]">
-          <span className="text-white">{formatTime(position)}</span>
+        <div className="mb-1 flex items-center justify-between font-mono text-[13px] tabular-nums text-on-surface-variant">
+          <span className="text-on-surface">{formatTime(position)}</span>
           <span>{formatTime(total)}</span>
         </div>
         <StageSeekBar pct={pct} position={position} total={total} onSeek={seek} />
@@ -115,7 +115,7 @@ function StagePanel() {
               type="button"
               onClick={toggle}
               aria-label={playing ? '暂停' : '播放'}
-              className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-white text-black shadow-lg active:opacity-80"
+              className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-primary text-on-primary hover:brightness-110 active:brightness-95"
             >
               {playing ? (
                 <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor">
@@ -144,7 +144,7 @@ function StagePanel() {
           </IconBtn>
         </div>
 
-        {loading && <div className="mt-1 text-center text-[12px] text-[#5c6371]">缓冲中…</div>}
+        {loading && <div className="mt-1 text-center text-[12px] text-on-surface-variant">缓冲中…</div>}
       </div>
     </div>
   )
@@ -199,10 +199,10 @@ function StageSeekBar({
       }}
       className="relative flex h-14 items-center touch-none"
     >
-      <div className="relative h-[6px] w-full rounded-full bg-[#3a4150]">
-        <div className="h-full rounded-full bg-white" style={{ width: `${shown}%` }} />
+      <div className="relative h-[6px] w-full rounded-full bg-surface-variant">
+        <div className="h-full rounded-full bg-primary" style={{ width: `${shown}%` }} />
         <div
-          className="pointer-events-none absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-lg"
+          className="pointer-events-none absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary outline-2 outline-surface"
           style={{ left: `${shown}%` }}
         />
       </div>
@@ -224,7 +224,7 @@ function IconBtn({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="mx-auto flex h-14 w-14 items-center justify-center rounded-full text-[#c6ccd6] active:bg-white/10 active:text-white"
+      className="mx-auto flex h-14 w-14 items-center justify-center rounded-full text-on-surface-variant hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
     >
       {children}
     </button>

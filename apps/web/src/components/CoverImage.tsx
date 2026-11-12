@@ -17,7 +17,8 @@ export function CoverImage({
   // .img-ready 给未下载完的图一个淡入（原图加载完先按容器裁好，避免「先出一点点再铺满」的闪动）
   // 没有图时不要渲染 <img>：空的 src 会显示浏览器破图图标
   if (!src) {
-    return <div className={className} style={{ background: 'linear-gradient(135deg,#1e2430,#2a303c)' }} aria-hidden="true" />
+    // 占位用 M3 的 surface-container-high；不要渐变（M3 不允许给普通内容面加装饰性填充）
+    return <div className={cn(className, 'bg-surface-container-high')} aria-hidden="true" />
   }
   return (
     <img

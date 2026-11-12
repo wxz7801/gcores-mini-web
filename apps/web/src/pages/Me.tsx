@@ -9,6 +9,7 @@ import { usePlayer } from '../store/player'
 import { toTrack } from '../components/RadioRow'
 import { RadioCard } from '../components/RadioCard'
 import { useQueueStore } from '../store/queue'
+import { ThemeToggle } from '../components/ThemeToggle'
 
 type Tab = 'history' | 'favorites'
 
@@ -37,37 +38,44 @@ export function MePage() {
   const u = auth.user
   return (
     <div className="pb-6">
-      <header className="sticky top-0 z-20 bg-ink/95 px-4 pt-[max(16px,env(safe-area-inset-top))] backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-outline-variant bg-surface-container-low px-4 pt-[max(16px,env(safe-area-inset-top))]">
         <div className="flex items-center justify-between">
-          <h1 className="text-[28px] leading-none font-bold text-white">我的</h1>
-          <button
-            type="button"
-            onClick={() => nav('/queue')}
-            aria-label="播放队列"
-            className="tap flex h-11 w-11 items-center justify-center rounded-full text-[#e8eaef]"
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 7h16M4 12h16M4 17h10" />
-            </svg>
-          </button>
+          <h1 className="text-[28px] leading-none font-bold text-on-surface">我的</h1>
+          <div className="flex items-center">
+            <ThemeToggle />
+            <button
+              type="button"
+              onClick={() => nav('/queue')}
+              aria-label="播放队列"
+              className="tap flex h-12 w-12 items-center justify-center rounded-full text-on-surface-variant hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M4 7h16M4 12h16M4 17h10" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div className="mt-4 flex items-center gap-3 pb-3">
           {u?.thumb ? (
             <CoverImage src={coverUrl(u.thumb, 160)} className="h-14 w-14 rounded-full object-cover" />
           ) : (
-            <div className="h-14 w-14 rounded-full bg-card" />
+            <div className="h-14 w-14 rounded-full bg-surface-container-highest" />
           )}
           <div className="min-w-0 flex-1">
-            <div className="truncate text-[17px] font-bold text-white">
+            <div className="truncate text-[17px] font-bold text-on-surface">
               {u?.nickname ?? (loading ? '加载中…' : '机核用户')}
             </div>
             <div className="mt-1 flex gap-1.5">
               {u?.hasMembership && (
-                <span className="rounded bg-timeline/15 px-1.5 py-0.5 text-[12px] text-timeline">GPASS 会员</span>
+                <span className="rounded-md bg-timeline-container px-1.5 py-0.5 text-[12px] text-on-timeline-container">
+                  GPASS 会员
+                </span>
               )}
               {u?.isFounderMember && (
-                <span className="rounded bg-gcores/15 px-1.5 py-0.5 text-[12px] text-gcores">创始会员</span>
+                <span className="rounded-md bg-primary-container px-1.5 py-0.5 text-[12px] text-on-primary-container">
+                  创始会员
+                </span>
               )}
             </div>
           </div>
@@ -85,12 +93,12 @@ export function MePage() {
               type="button"
               onClick={() => setTab(t.id)}
               className={cn(
-                'relative pb-2 text-[17px]',
-                tab === t.id ? 'font-bold text-white' : 'text-[#8a92a3]',
+                'relative pb-2 text-[17px] transition-colors',
+                tab === t.id ? 'font-bold text-primary' : 'text-on-surface-variant',
               )}
             >
               {t.label}
-              {tab === t.id && <span className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-white" />}
+              {tab === t.id && <span className="absolute inset-x-0 -bottom-px h-[3px] rounded-t-full bg-primary" />}
             </button>
           ))}
         </div>
@@ -105,11 +113,11 @@ export function MePage() {
             signOut()
             nav('/')
           }}
-          className="h-12 w-full rounded-full border border-line text-[16px] text-[#cfd3da]"
+          className="h-12 w-full rounded-full border border-outline text-[16px] text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
         >
           退出登录
         </button>
-        <p className="mt-3 text-center text-[12px] leading-relaxed text-[#5c6371]">
+        <p className="mt-3 text-center text-[12px] leading-relaxed text-outline">
           第三方触屏播放器 · 账号与登录态只保存在本机浏览器
         </p>
       </div>
@@ -121,23 +129,27 @@ function LoggedOut() {
   const nav = useNavigate()
   return (
     <div className="px-5 pt-[max(16px,env(safe-area-inset-top))]">
-      <h1 className="text-[28px] leading-none font-bold text-white">我的</h1>
-      <div className="mt-8 rounded-2xl bg-card p-5">
-        <div className="text-[17px] font-medium text-white">还没有登录</div>
-        <p className="mt-1.5 text-[14px] leading-relaxed text-[#8a92a3]">
+      <div className="flex items-center justify-between">
+        <h1 className="text-[28px] leading-none font-bold text-on-surface">我的</h1>
+        <ThemeToggle />
+      </div>
+      {/* 未登录态只有一块内容，按 M3 containment 预算用一块容器就够，不再套第二层 */}
+      <div className="mt-8 rounded-2xl bg-surface-container p-5">
+        <div className="text-[17px] font-medium text-on-surface">还没有登录</div>
+        <p className="mt-1.5 text-[14px] leading-relaxed text-on-surface-variant">
           登录后可收听 GPASS 节目与有声书、同步收听进度，并收藏喜欢的节目。
         </p>
         <button
           type="button"
           onClick={() => nav('/login')}
-          className="mt-4 h-11 w-full rounded-full bg-gcores text-[16px] font-medium text-white"
+          className="mt-4 h-12 w-full rounded-full bg-primary text-[16px] font-medium text-on-primary hover:brightness-110 active:brightness-95"
         >
           登录机核账号
         </button>
       </div>
-      <div className="mt-4 rounded-2xl bg-card/60 p-4 text-[13px] leading-relaxed text-[#5c6371]">
+      <p className="mt-4 px-1 text-[13px] leading-relaxed text-outline">
         这是第三方的触屏播放器，不是机核官方客户端。账号信息仅保存在本机浏览器。
-      </div>
+      </p>
     </div>
   )
 }
@@ -196,23 +208,23 @@ function HistoryRow({ radio, progress, at }: { radio: RadioListItem; progress: n
   const isCurrent = currentId === radio.id
 
   return (
-    <div className="flex items-center gap-3 rounded-xl px-2 py-2.5 active:bg-card/60">
+    <div className="flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-on-surface/[0.06] active:bg-on-surface/[0.1]">
       <button type="button" onClick={() => nav(`/radio/${radio.id}`)} className="shrink-0" aria-label={radio.title}>
         <CoverImage src={coverUrl(radio.thumb || radio.cover, 240, 135)} className="h-[54px] w-[96px] rounded-lg object-cover" />
       </button>
       <button type="button" onClick={() => nav(`/radio/${radio.id}`)} className="min-w-0 flex-1 text-left">
-        <div className="line-clamp-2 text-[16px] leading-snug text-[#e8eaef]">{radio.title}</div>
-        <div className="mt-1 flex items-center gap-1.5 text-[13px] text-[#7d8594]">
+        <div className="line-clamp-2 text-[16px] leading-snug text-on-surface">{radio.title}</div>
+        <div className="mt-1 flex items-center gap-1.5 text-[13px] text-on-surface-variant">
           <span className="truncate">{radio.categories[0]?.name ?? (radio.isFm ? '机核 FM' : '播客')}</span>
           <span>·</span>
           <span className="shrink-0">{relativeDate(at)}</span>
         </div>
         {pct > 0 && (
           <div className="mt-1.5 flex items-center gap-2">
-            <span className="h-[2px] flex-1 overflow-hidden rounded-full bg-line">
-              <span className="block h-full bg-gcores" style={{ width: `${pct}%` }} />
+            <span className="h-[3px] flex-1 overflow-hidden rounded-full bg-surface-variant">
+              <span className="block h-full bg-primary" style={{ width: `${pct}%` }} />
             </span>
-            <span className="shrink-0 text-[12px] text-[#5c6371]">听到 {formatTime(progress)}</span>
+            <span className="shrink-0 text-[12px] text-outline">听到 {formatTime(progress)}</span>
           </div>
         )}
       </button>
@@ -226,7 +238,7 @@ function HistoryRow({ radio, progress, at }: { radio: RadioListItem; progress: n
           void playTrack(toTrack(radio), []).then(() => seek(progress))
         }}
         aria-label="从上次位置继续"
-        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-gcores/60 text-gcores"
+        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-primary text-primary hover:bg-primary/[0.08] active:bg-primary/[0.1]"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
           <path d="M7 4l14 8-14 8z" />
@@ -265,11 +277,11 @@ function FavoriteList() {
   return (
     <div className="pt-3">
       <div className="mb-3 flex items-center justify-between px-4">
-        <span className="text-[14px] text-[#8a92a3]">共 {items.length} 个节目</span>
+        <span className="text-[14px] text-on-surface-variant">共 {items.length} 个节目</span>
         <button
           type="button"
           onClick={() => items.forEach((r) => enqueue(toTrack(r)))}
-          className="flex min-h-[44px] items-center text-[15px] text-[#5aa9ff]"
+          className="flex min-h-[44px] items-center rounded-md px-1 text-[15px] text-primary hover:bg-primary/[0.08]"
         >
           全部加入队列
         </button>
@@ -284,5 +296,5 @@ function FavoriteList() {
 }
 
 function Hint({ text }: { text: string }) {
-  return <div className="px-5 py-12 text-center text-[15px] leading-relaxed text-[#5c6371]">{text}</div>
+  return <div className="px-5 py-12 text-center text-[15px] leading-relaxed text-outline">{text}</div>
 }

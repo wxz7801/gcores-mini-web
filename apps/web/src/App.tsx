@@ -252,8 +252,12 @@ function NotFound() {
   const nav = useNavigate()
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3">
-      <div className="text-[15px] text-white">页面不存在</div>
-      <button type="button" onClick={() => nav('/')} className="rounded-full bg-card px-5 py-2.5 text-[13px] text-[#cfd3da]">
+      <div className="text-[15px] text-on-surface">页面不存在</div>
+      <button
+        type="button"
+        onClick={() => nav('/')}
+        className="h-11 rounded-full border border-outline px-5 text-[13px] text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
+      >
         回到发现
       </button>
     </div>
@@ -265,13 +269,18 @@ function LatestPage() {
   const nav = useNavigate()
   return (
     <TabShell>
-      <div className="sticky top-0 z-20 flex items-center gap-2 bg-ink/95 px-2 pt-[max(8px,env(safe-area-inset-top))] pb-2 backdrop-blur">
-        <button type="button" onClick={() => nav(-1)} className="tap shrink-0 text-[#e8eaef]" aria-label="返回">
+      <div className="sticky top-0 z-20 flex items-center gap-2 border-b border-outline-variant bg-surface-container-low px-2 pt-[max(8px,env(safe-area-inset-top))] pb-2">
+        <button
+          type="button"
+          onClick={() => nav(-1)}
+          className="tap flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
+          aria-label="返回"
+        >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M15 5l-7 7 7 7" />
           </svg>
         </button>
-        <h1 className="text-[16px] font-bold text-white">最新节目</h1>
+        <h1 className="text-[16px] font-bold text-on-surface">最新节目</h1>
       </div>
       <LatestList />
     </TabShell>
@@ -297,12 +306,12 @@ function LatestList() {
           type="button"
           onClick={() => void q.fetchNextPage()}
           disabled={q.isFetchingNextPage}
-          className="mx-auto my-6 block h-12 rounded-full bg-card px-8 text-[13px] text-[#cfd3da]"
+          className="mx-auto my-6 block h-12 rounded-full border border-outline px-8 text-[13px] text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
         >
           {q.isFetchingNextPage ? '加载中…' : '加载更多'}
         </button>
       )}
-      {q.isLoading && <div className="px-4 py-10 text-center text-[13px] text-[#8a92a3]">加载中…</div>}
+      {q.isLoading && <div className="px-4 py-10 text-center text-[13px] text-on-surface-variant">加载中…</div>}
     </div>
   )
 }

@@ -44,11 +44,11 @@ export function RadioCard({
         className="block w-full text-left"
         aria-label={radio.title}
       >
-        <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-card max-sm:rounded-lg">
+        <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-surface-container max-sm:rounded-lg">
           <CoverImage src={coverUrl(radio.thumb || radio.cover, 480, 270)} className="h-full w-full object-cover" />
 
           {/* 时长角标（左上） */}
-          <span className="absolute top-1 left-1 flex items-center gap-1 rounded bg-black/60 px-1 py-0.5 text-[11px] leading-none text-white backdrop-blur-sm sm:top-2 sm:left-2 sm:rounded-md sm:px-1.5 sm:text-[13px]">
+          <span className="absolute top-1 left-1 flex items-center gap-1 rounded-md bg-[var(--m3-scrim)] px-1 py-0.5 text-[11px] leading-none text-white sm:top-2 sm:left-2 sm:px-1.5 sm:text-[13px]">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
               <path d="M9 18V6l10-2v12" fill="none" stroke="currentColor" strokeWidth="2.5" />
               <circle cx="6.5" cy="18" r="2.5" />
@@ -59,7 +59,7 @@ export function RadioCard({
 
           {/* 播放量角标（右上，无播放量时隐藏） */}
           {radio.plays > 0 && (
-            <span className="absolute top-1 right-1 hidden items-center gap-1 rounded bg-black/60 px-1 py-0.5 text-[11px] leading-none text-white backdrop-blur-sm sm:top-2 sm:right-2 sm:flex sm:rounded-md sm:px-1.5 sm:text-[13px]">
+            <span className="absolute top-1 right-1 hidden items-center gap-1 rounded-md bg-[var(--m3-scrim)] px-1 py-0.5 text-[11px] leading-none text-white sm:top-2 sm:right-2 sm:flex sm:px-1.5 sm:text-[13px]">
               <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                 <path d="M7 4l14 8-14 8z" />
               </svg>
@@ -83,14 +83,16 @@ export function RadioCard({
             onKeyDown={(e) => e.key === 'Enter' && (e.stopPropagation(), e.preventDefault(), isCurrent ? toggle() : void playTrack(toTrack(radio), (queue ?? []).map((r) => toTrack(r))))}
             aria-label={isPlaying ? '暂停' : '播放'}
             className={cn(
-              'absolute inset-0 flex items-center justify-center bg-black/10 transition-opacity',
+              'absolute inset-0 flex items-center justify-center bg-[var(--m3-scrim)] transition-opacity',
               isCurrent ? 'opacity-100' : 'opacity-0 [@media(hover:none)]:opacity-100 group-hover:opacity-100',
             )}
           >
             <span
               className={cn(
-                'flex h-[54px] w-[54px] items-center justify-center rounded-full shadow-lg backdrop-blur-sm sm:h-16 sm:w-16',
-                isCurrent ? 'bg-gcores text-white' : 'bg-black/55 text-white',
+                'flex h-[54px] w-[54px] items-center justify-center rounded-full sm:h-16 sm:w-16',
+                isCurrent
+                  ? 'bg-primary text-on-primary'
+                  : 'bg-[var(--m3-media-overlay)] text-white outline-1 outline-white/40',
               )}
             >
               {isPlaying ? (
@@ -107,7 +109,7 @@ export function RadioCard({
           </span>
 
           {radio.isRequirePrivilege && (
-            <span className="absolute bottom-1 left-1 rounded bg-[#8b1e26]/90 px-1 py-0.5 text-[11px] leading-none font-bold text-white sm:bottom-2 sm:left-2 sm:px-1.5 sm:text-[12px]">
+            <span className="absolute bottom-1 left-1 rounded-md bg-timeline-container px-1 py-0.5 text-[11px] leading-none font-bold text-on-timeline-container sm:bottom-2 sm:left-2 sm:px-1.5 sm:text-[12px]">
               GPASS
             </span>
           )}
@@ -130,7 +132,7 @@ export function RadioCard({
             }}
             aria-label={queued ? '已在队列中' : '加入播放队列'}
             aria-haspopup="dialog"
-            className="absolute right-1.5 bottom-1.5 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm active:bg-black/80 sm:right-2 sm:bottom-2 sm:h-12 sm:w-12"
+            className="absolute right-1.5 bottom-1.5 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--m3-scrim)] text-white active:bg-[var(--m3-media-overlay)] sm:right-2 sm:bottom-2 sm:h-12 sm:w-12"
           >
             {queued ? (
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -150,21 +152,21 @@ export function RadioCard({
       <button type="button" onClick={() => nav(`/radio/${radio.id}`)} className="mt-2 block w-full text-left">
         <div className="flex items-center gap-1.5 text-[13px] leading-none sm:text-[14px]">
           {radio.isFm ? (
-            <span className="truncate text-[#5aa9ff]">机核 FM</span>
+            <span className="truncate text-primary">机核 FM</span>
           ) : (
-            <span className="truncate text-[#5aa9ff]">{channel}</span>
+            <span className="truncate text-primary">{channel}</span>
           )}
-          <span className="hidden shrink-0 text-[13px] text-[#f0863c] sm:inline">更新</span>
+          <span className="hidden shrink-0 text-[13px] text-tertiary sm:inline">更新</span>
         </div>
-        <h3 className="mt-1 line-clamp-2 text-[15px] leading-[1.35] text-[#e8eaef] sm:mt-1.5 sm:text-[16px] sm:leading-[1.4]">{radio.title}</h3>
-        <div className="mt-2 hidden items-center justify-between text-[13px] text-[#7d8594] sm:flex">
+        <h3 className="mt-1 line-clamp-2 text-[15px] leading-[1.35] text-on-surface sm:mt-1.5 sm:text-[16px] sm:leading-[1.4]">{radio.title}</h3>
+        <div className="mt-2 hidden items-center justify-between text-[13px] text-on-surface-variant sm:flex">
           <span className="flex min-w-0 items-center gap-1.5">
             {showDj && radio.djs[0] && (
               <>
                 {radio.djs[0].avatar ? (
                   <CoverImage src={coverUrl(radio.djs[0].avatar, 40)} className="h-5 w-5 rounded-full object-cover" />
                 ) : (
-                  <span className="h-5 w-5 rounded-full bg-card" />
+                  <span className="h-5 w-5 rounded-full bg-surface-container-highest" />
                 )}
                 <span className="truncate">{radio.djs[0].nickname}</span>
               </>

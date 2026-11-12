@@ -36,14 +36,14 @@ export function QueueMenu({ track, onClose }: { track: Track; onClose: () => voi
       <div
         role="dialog"
         aria-label="节目操作"
-        className="absolute bottom-2 right-2 z-30 w-[248px] overflow-hidden rounded-2xl border border-line bg-[#1b1f26] shadow-2xl"
+        className="absolute bottom-2 right-2 z-30 w-[248px] overflow-hidden rounded-xl bg-surface-container-high shadow-[var(--m3-elevation-2)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-2 border-b border-line px-3 py-2.5">
-          <CoverImage src={track.cover} className="h-10 w-10 shrink-0 rounded object-cover" />
+        <div className="flex items-center gap-2 border-b border-outline-variant px-3 py-2.5">
+          <CoverImage src={track.cover} className="h-10 w-10 shrink-0 rounded-md object-cover" />
           <div className="min-w-0">
-            <div className="truncate text-[15px] text-white">{track.title}</div>
-            <div className="text-[13px] text-[#7d8594]">{formatTime(track.duration)}</div>
+            <div className="truncate text-[15px] text-on-surface">{track.title}</div>
+            <div className="text-[13px] text-on-surface-variant">{formatTime(track.duration)}</div>
           </div>
         </div>
         <button
@@ -56,7 +56,7 @@ export function QueueMenu({ track, onClose }: { track: Track; onClose: () => voi
           }}
           className={cn(
             'flex min-h-[52px] w-full items-center gap-2.5 px-4 text-left text-[16px]',
-            queued ? 'text-[#7d8594]' : 'text-[#e8eaef] active:bg-white/5',
+            queued ? 'text-on-surface-variant' : 'text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]',
           )}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -85,7 +85,7 @@ export function QueueMenu({ track, onClose }: { track: Track; onClose: () => voi
             playCustomQueue(at > 0 ? [...tracks.slice(at), ...tracks.slice(0, at)] : tracks)
             onClose()
           }}
-          className="flex w-full items-center gap-2 border-t border-line px-4 py-3 text-left text-[16px] text-[#5b9dff] min-h-[52px] active:bg-white/5"
+          className="flex min-h-[52px] w-full items-center gap-2 border-t border-outline-variant px-4 py-3 text-left text-[16px] text-primary hover:bg-primary/[0.08] active:bg-primary/[0.1]"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
             <path d="M7 4l14 8-14 8z" />
@@ -95,7 +95,7 @@ export function QueueMenu({ track, onClose }: { track: Track; onClose: () => voi
         <Link
           to={`/radio/${track.radioId}`}
           onClick={onClose}
-          className="flex min-h-[52px] w-full items-center gap-2.5 px-4 text-[16px] text-[#e8eaef] active:bg-white/5"
+          className="flex min-h-[52px] w-full items-center gap-2.5 px-4 text-[16px] text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 8v-.01M12 12v4" />
@@ -110,7 +110,7 @@ export function QueueMenu({ track, onClose }: { track: Track; onClose: () => voi
               remove(track.radioId)
               onClose()
             }}
-            className="flex w-full items-center gap-2 border-t border-line px-4 py-3 text-left text-[16px] text-[#8a92a3] min-h-[52px] active:bg-white/5"
+            className="flex min-h-[52px] w-full items-center gap-2 border-t border-outline-variant px-4 py-3 text-left text-[16px] text-on-surface-variant hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13" />

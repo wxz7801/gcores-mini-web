@@ -51,13 +51,15 @@ export function TimelinePill({
       onClick={onClick}
       className={cn(
         'flex max-w-full items-center gap-2 rounded-full py-1.5 pr-3.5 pl-1.5 text-left',
-        active ? 'bg-gcores text-white' : 'bg-white/8 text-[#cfd3da] active:bg-white/15',
+        active
+          ? 'bg-primary-container text-on-primary-container'
+          : 'bg-surface-container-high text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]',
       )}
     >
       <span
         className={cn(
           'flex h-7 w-7 shrink-0 items-center justify-center rounded-full',
-          active ? 'bg-white/25 text-white' : 'bg-white/12 text-white',
+          active ? 'bg-primary text-on-primary' : 'bg-surface-container-highest text-on-surface',
         )}
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
@@ -65,7 +67,7 @@ export function TimelinePill({
         </svg>
       </span>
       <span className="truncate text-[15px] font-medium">{title}</span>
-      <span className={cn('shrink-0 text-[14px] tabular-nums', active ? 'text-white/80' : 'text-[#8a92a3]')}>
+      <span className={cn('shrink-0 text-[14px] tabular-nums', active ? 'text-on-primary-container/80' : 'text-on-surface-variant')}>
         {toClock(at)}
       </span>
     </button>

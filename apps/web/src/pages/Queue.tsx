@@ -34,14 +34,19 @@ export function QueuePage() {
   return (
     // 横屏要给左下舞台区和右下悬浮导航让位，队列内容不能铺到底
     <div className="pb-[calc(124px+env(safe-area-inset-bottom))] sm:pb-[calc(128px+env(safe-area-inset-bottom))]">
-      <header className="sticky top-0 z-10 flex items-center gap-2 bg-ink/95 px-2 pt-[max(8px,env(safe-area-inset-top))] pb-2 backdrop-blur">
-        <button type="button" onClick={() => nav(-1)} className="tap shrink-0 text-[#e8eaef]" aria-label="返回">
+      <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-outline-variant bg-surface-container-low px-2 pt-[max(8px,env(safe-area-inset-top))] pb-2">
+        <button
+          type="button"
+          onClick={() => nav(-1)}
+          className="tap flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
+          aria-label="返回"
+        >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M15 5l-7 7 7 7" />
           </svg>
         </button>
-        <h1 className="min-w-0 flex-1 text-[18px] font-bold text-white">播放队列</h1>
-        <span className="pr-2 text-[13px] text-[#8a92a3]">{ids.length} 期</span>
+        <h1 className="min-w-0 flex-1 text-[18px] font-bold text-on-surface">播放队列</h1>
+        <span className="pr-2 text-[13px] text-on-surface-variant">{ids.length} 期</span>
       </header>
 
       {ids.length > 0 && (
@@ -49,7 +54,7 @@ export function QueuePage() {
           <button
             type="button"
             onClick={() => playAll()}
-            className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-gcores text-[16px] font-medium text-white active:brightness-110"
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-primary text-[16px] font-medium text-on-primary hover:brightness-110 active:brightness-95"
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
               <path d="M7 4l14 8-14 8z" />
@@ -64,7 +69,7 @@ export function QueuePage() {
               const cur = usePlayer.getState().current
               if (cur) playCustomQueue([cur])
             }}
-            className="h-11 rounded-full bg-card px-5 text-[15px] text-[#cfd3da] active:bg-[#262b34]"
+            className="h-12 rounded-full border border-outline px-5 text-[15px] text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
           >
             清空
           </button>
@@ -72,9 +77,9 @@ export function QueuePage() {
       )}
 
       {!ids.length && (
-        <div className="px-4 py-10 text-center text-[15px] text-[#8a92a3]">
+        <div className="px-4 py-10 text-center text-[15px] text-on-surface-variant">
           队列是空的
-          <div className="mt-2 text-[14px] text-[#5c6371]">在卡片右下角点「＋」，把节目攒到这里</div>
+          <div className="mt-2 text-[14px] text-outline">在卡片右下角点「＋」，把节目攒到这里</div>
         </div>
       )}
 
@@ -84,10 +89,15 @@ export function QueuePage() {
             key={ids[i]}
             className={cn(
               'flex w-full items-center gap-3 rounded-xl px-2 py-2',
-              ids[i] === current?.radioId ? 'bg-gcores/10' : '',
+              ids[i] === current?.radioId ? 'bg-primary-container' : 'hover:bg-on-surface/[0.06]',
             )}
           >
-            <span className="w-4 shrink-0 text-center text-[13px] text-[#5c6371]">
+            <span
+              className={cn(
+                'w-4 shrink-0 text-center text-[13px]',
+                ids[i] === current?.radioId ? 'text-on-primary-container' : 'text-outline',
+              )}
+            >
               {ids[i] === current?.radioId ? '\u25b6' : i + 1}
             </span>
             <button
@@ -102,8 +112,20 @@ export function QueuePage() {
             >
               <CoverImage src={row.cover} className="h-14 w-14 shrink-0 rounded-lg object-cover" />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[15px] text-[#e8eaef]">{row.title || '节目'}</span>
-                <span className="mt-0.5 block truncate text-[13px] text-[#7d8594]">
+                <span
+                  className={cn(
+                    'block truncate text-[15px]',
+                    ids[i] === current?.radioId ? 'text-on-primary-container' : 'text-on-surface',
+                  )}
+                >
+                  {row.title || '节目'}
+                </span>
+                <span
+                  className={cn(
+                    'mt-0.5 block truncate text-[13px]',
+                    ids[i] === current?.radioId ? 'text-on-primary-container/80' : 'text-on-surface-variant',
+                  )}
+                >
                   {row.category ? `${row.category} · ` : ''}
                   {formatTime(row.duration)}
                 </span>
@@ -113,7 +135,7 @@ export function QueuePage() {
               type="button"
               onClick={() => remove(ids[i])}
               aria-label="从队列移除"
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-[#7d8594] active:bg-card"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-on-surface-variant hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M6 6l12 12M18 6L6 18" />

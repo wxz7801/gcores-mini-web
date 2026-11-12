@@ -90,7 +90,7 @@ pnpm preview
       叠在封面上的圆形按钮（卡片播放 64px、＋ 48px、播放条 56px / 大播放键 84px）单独给足。
     - 进度条热区 56px 高、轨道 6px、旋钮 20px；用 `pointerdown` + `setPointerCapture` 单点拖动，不依赖 hover。
     - 不能依赖 hover：`opacity-0 group-hover:opacity-100` 那种只在 `[@media(hover:none)]` 下常显。
-    - 列表别只靠 7px 行距分隔——竖屏列表加了 `divide-y divide-line/70`，一行一行读得清。
+    - 列表别只靠 7px 行距分隔——竖屏列表加了 `divide-y divide-outline-variant`，一行一行读得清。
 
 ---
 
@@ -123,6 +123,25 @@ pnpm preview
 
 ### 17. `cleanText` 不要用 `\s+` 压缩空白
 `\s` 包含换行符，`.replace(/\s+/g, ' ')` 会把多行正文的换行也压成空格，渲染出来就是「原 来」这种断字。`lib/format.ts` 只压缩**连续两个以上**的 `[ \t\u3000]`，单个换行原样保留；同时清掉零宽字符（`\u200b-\u200f`、`\u202a-\u202e`、`\u2060`、`\ufeff`）。
+
+## 4.5 视觉规范：Material Design 3
+
+界面按 [Material 3](https://m3.material.io/) 的语义角色组织，规则来源是 `gdlbo/material-skill`（`SKILL.md`）。要点：
+
+- **颜色只用语义角色**。所有色值落在 `apps/web/src/styles/m3-tokens.css`，分 `[data-theme='dark']` 和 `[data-theme='light']` 两套，`index.css` 用 `@theme inline` 把它们注册成 Tailwind 颜色（`bg-primary` / `text-on-surface-variant` / `border-outline-variant` …）。
+  - **必须写 `@theme inline`**：不加 `inline` 时 Tailwind 会把变量值在构建期固化，切主题不生效。
+  - 机核红 `#ff3e4d` 作为深色主题的 `primary`，浅色主题压到 `#c0002a` 保证白底上的对比度。
+  - 界面里不再出现 `bg-ink` / `bg-card` / `text-[#8a92a3]` 这类字面色，全部改成语义类（`bg-surface` / `bg-surface-container-high` / `text-on-surface-variant`）。
+- **不磨砂**：所有 `backdrop-blur` 已清除。吸顶头统一 `bg-surface-container-low` + 底部一条 `border-outline-variant`，不再用半透明叠层。
+- **阴影只给真实重叠**：只有 `QueueMenu` 和倍速菜单（浮层）用 `--m3-elevation-2`，其余靠色调分层（surface-container-low / -high / -highest）。
+- **containment 预算 1:3**：评论回复区去掉了卡片底色，改成左侧 2px `border-outline-variant` 细线，避免「卡片套卡片」；时间轴当前章节也只用 `bg-primary-container` 一层，不再叠 ring。
+- **状态层**：hover 8% / pressed 10%（`bg-on-surface/[0.08]`、`bg-on-surface/[0.1]`），没有画面级的放大或变色动画。
+- **主题切换**：开关在「我的」页页头（未登录态也有），写 `localStorage['gcores.theme.v1']`，首帧由 `index.html` 里的内联脚本先设 `data-theme`，避免浅色用户看到一闪的深色。默认跟随 `prefers-color-scheme`。
+- **组件对应**：底部导航是 M3 navigation bar（`bg-surface-container` + 激活胶囊 `bg-secondary-container`）；页面内页签是 primary tabs（3px 下划线 + `text-primary`）；筛选是 M3 filter chip（选中 `secondary-container`，未选中 `outline` 描边）；登录页的分段控件是 segmented button。
+
+新增组件时请沿用以上类名，不要把 hex 写回 TSX；确实需要的媒体叠层用 `--m3-scrim` / `--m3-media-overlay`。
+
+---
 
 ## 5. 部署：反向代理
 
@@ -225,9 +244,11 @@ apps/web/src/
 │   └── Tabs.tsx       # 底部 Tab / 侧边导航
 ├── hooks/
 │   ├── useLayout.ts   # 横竖屏判断
+│   ├── useTheme.ts    # 深/浅主题（localStorage + data-theme）
 │   └── useRadioFeed.ts
 ├── lib/format.ts      # coverUrl / formatTime / relativeDate / cleanText(去零宽、压空白)
-├── pages/             # 9 个页面
+├── pages/             # 13 个页面
+├── styles/m3-tokens.css  # M3 语义色 / 状态层 / 形状 / 高度（深色 + 浅色两套）
 └── store/player.ts    # zustand 播放器（单例 audio + 心跳 + Media Session）
 docs/
 ├── research.md        # API 与鉴权逆向记录

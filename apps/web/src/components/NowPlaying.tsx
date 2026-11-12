@@ -77,7 +77,7 @@ export function NowPlaying() {
   return (
     <div
       className={cn(
-        'fixed inset-0 z-50 flex flex-col bg-ink',
+        'fixed inset-0 z-50 flex flex-col bg-surface',
         // 横屏时让出左侧禁区（右侧导航已移到底部，整块高度归内容）
         wide ? 'left-[var(--dead-zone)]' : '',
       )}
@@ -85,12 +85,6 @@ export function NowPlaying() {
       aria-modal="true"
       aria-label="正在播放"
     >
-      {/* 背景：封面模糊铺底 */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <CoverImage src={current.cover} className="h-full w-full scale-125 object-cover opacity-20 blur-3xl" />
-        <div className="absolute inset-0 bg-gradient-to-b from-ink/70 via-ink/90 to-ink" />
-      </div>
-
       <div className="relative flex min-h-0 flex-1 flex-col px-5 pb-5 pt-2">
         {/* 顶部：收起 */}
         <div className="flex items-center justify-between">
@@ -98,18 +92,18 @@ export function NowPlaying() {
             type="button"
             aria-label="收起播放页"
             onClick={() => setExpanded(false)}
-            className="flex h-14 w-14 items-center justify-center rounded-full text-[#cfd3da] active:bg-white/10"
+            className="flex h-14 w-14 items-center justify-center rounded-full text-on-surface-variant hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
           >
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
-          <div className="text-[13px] tracking-wide text-[#8a92a3]">正在播放</div>
+          <div className="text-[13px] tracking-wide text-on-surface-variant">正在播放</div>
           <Link
             to={`/radio/${current.radioId}`}
             onClick={() => setExpanded(false)}
             aria-label="节目详情"
-            className="flex h-14 w-14 items-center justify-center rounded-full text-[#cfd3da] active:bg-white/10"
+            className="flex h-14 w-14 items-center justify-center rounded-full text-on-surface-variant hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
@@ -126,7 +120,7 @@ export function NowPlaying() {
           >
             <CoverImage
               src={current.cover}
-              className={cn('aspect-square w-full rounded-3xl object-cover shadow-2xl', !playing && 'opacity-80')}
+              className={cn('aspect-square w-full rounded-xl object-cover', !playing && 'opacity-80')}
             />
           </div>
         </div>
@@ -136,11 +130,11 @@ export function NowPlaying() {
           <Link
             to={`/radio/${current.radioId}`}
             onClick={() => setExpanded(false)}
-            className="line-clamp-2 text-[22px] font-bold leading-snug text-white"
+            className="line-clamp-2 text-[22px] font-bold leading-snug text-on-surface"
           >
             {current.title}
           </Link>
-          <div className="mt-1.5 flex items-center gap-2 text-[14px] text-[#8a92a3]">
+          <div className="mt-1.5 flex items-center gap-2 text-[14px] text-on-surface-variant">
             <span className="min-w-0 truncate">
               {current.djs?.length ? current.djs.join(' · ') : ''}
               {current.category ? (current.djs?.length ? ' · ' : '') + current.category : ''}
@@ -148,7 +142,7 @@ export function NowPlaying() {
             <Link
               to={`/radio/${current.radioId}`}
               onClick={() => setExpanded(false)}
-              className="flex h-11 shrink-0 items-center rounded-full bg-white/10 px-4 text-[15px] text-[#9fb8e8] active:bg-white/16"
+              className="flex h-11 shrink-0 items-center rounded-full bg-secondary-container px-4 text-[15px] font-medium text-on-secondary-container hover:brightness-110 active:brightness-95"
             >
               时间轴 ›
             </Link>
@@ -175,15 +169,15 @@ export function NowPlaying() {
             }}
             onPointerCancel={() => setDrag(null)}
           >
-            <div className="relative h-[6px] w-full overflow-hidden rounded-full bg-white/15">
-              <div className="absolute inset-y-0 left-0 rounded-full bg-gcores" style={{ width: `${ratio * 100}%` }} />
+            <div className="relative h-[6px] w-full overflow-hidden rounded-full bg-surface-variant">
+              <div className="absolute inset-y-0 left-0 rounded-full bg-primary" style={{ width: `${ratio * 100}%` }} />
             </div>
             <div
-              className="pointer-events-none absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow"
+              className="pointer-events-none absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary outline-2 outline-surface"
               style={{ left: `calc(${ratio * 100}% + 8px)` }}
             />
           </div>
-          <div className="flex justify-between text-[13px] tabular-nums text-[#8a92a3]">
+          <div className="flex justify-between text-[13px] tabular-nums text-on-surface-variant">
             <span>{formatTime(shown)}</span>
             <span>-{formatTime(Math.max(0, total - shown))}</span>
           </div>
@@ -195,7 +189,7 @@ export function NowPlaying() {
             type="button"
             aria-label="后退15秒"
             onClick={() => skip(-15)}
-            className="flex h-16 w-16 items-center justify-center rounded-full text-white active:bg-white/10"
+            className="flex h-16 w-16 items-center justify-center rounded-full text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
           >
             <Back15 />
           </button>
@@ -203,7 +197,7 @@ export function NowPlaying() {
             type="button"
             aria-label="上一期"
             onClick={prev}
-            className="flex h-16 w-16 items-center justify-center rounded-full text-white active:bg-white/10"
+            className="flex h-16 w-16 items-center justify-center rounded-full text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
           >
             <PrevIcon />
           </button>
@@ -212,7 +206,7 @@ export function NowPlaying() {
             aria-label={playing ? '暂停' : '播放'}
             onClick={toggle}
             disabled={loading}
-            className="flex h-[84px] w-[84px] items-center justify-center rounded-full bg-gcores text-white shadow-xl active:scale-95 disabled:opacity-60"
+            className="flex h-[84px] w-[84px] items-center justify-center rounded-full bg-primary text-on-primary hover:brightness-110 active:scale-95 active:brightness-95 disabled:opacity-60"
           >
             {loading ? <Spinner /> : playing ? <PauseIcon /> : <PlayIcon />}
           </button>
@@ -220,7 +214,7 @@ export function NowPlaying() {
             type="button"
             aria-label="下一期"
             onClick={next}
-            className="flex h-16 w-16 items-center justify-center rounded-full text-white active:bg-white/10"
+            className="flex h-16 w-16 items-center justify-center rounded-full text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
           >
             <NextIcon />
           </button>
@@ -228,24 +222,24 @@ export function NowPlaying() {
             type="button"
             aria-label="前进15秒"
             onClick={() => skip(15)}
-            className="flex h-16 w-16 items-center justify-center rounded-full text-white active:bg-white/10"
+            className="flex h-16 w-16 items-center justify-center rounded-full text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
           >
             <Fwd15 />
           </button>
         </div>
 
         {/* 底部工具栏 */}
-        <div className="mt-3 flex items-center justify-center gap-3 border-t border-line pt-2">
+        <div className="mt-3 flex items-center justify-center gap-3 border-t border-outline-variant pt-2">
           <div className="relative">
             <button
               type="button"
               onClick={() => setRateOpen((v) => !v)}
-              className="flex h-14 min-w-16 items-center justify-center rounded-2xl bg-white/8 px-4 text-[16px] text-[#cfd3da] active:bg-white/14"
+              className="flex h-14 min-w-16 items-center justify-center rounded-xl border border-outline px-4 text-[16px] text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
             >
               {rate === 1 ? '倍速' : `${rate}×`}
             </button>
             {rateOpen && (
-              <div className="absolute bottom-16 left-1/2 flex -translate-x-1/2 gap-1 rounded-2xl border border-line bg-panel p-2 shadow-2xl">
+              <div className="absolute bottom-16 left-1/2 flex -translate-x-1/2 gap-1 rounded-xl bg-surface-container-high p-2 shadow-[var(--m3-elevation-2)]">
                 {RATES.map((r) => (
                   <button
                     key={r}
@@ -255,8 +249,10 @@ export function NowPlaying() {
                       setRateOpen(false)
                     }}
                     className={cn(
-                      'h-12 min-w-14 rounded-xl px-2 text-[16px]',
-                      r === rate ? 'bg-gcores text-white' : 'text-[#cfd3da] active:bg-white/10',
+                      'h-12 min-w-14 rounded-xl px-2 text-[16px] transition-colors',
+                      r === rate
+                        ? 'bg-secondary-container font-medium text-on-secondary-container'
+                        : 'text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]',
                     )}
                   >
                     {r}×
@@ -269,13 +265,15 @@ export function NowPlaying() {
             to="/queue"
             onClick={() => setExpanded(false)}
             aria-label="播放队列"
-            className="flex h-14 min-w-16 items-center justify-center rounded-2xl bg-white/8 px-4 text-[16px] text-[#cfd3da] active:bg-white/14"
+            className="flex h-14 min-w-16 items-center justify-center rounded-xl border border-outline px-4 text-[16px] text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
           >
             队列
           </Link>
         </div>
 
-        {error && <div className="mt-2 rounded-xl bg-gcores/15 px-3 py-2 text-center text-[14px] text-gcores">{error}</div>}
+        {error && (
+          <div className="mt-2 rounded-xl bg-error-container px-3 py-2 text-center text-[14px] text-on-error-container">{error}</div>
+        )}
       </div>
     </div>
   )

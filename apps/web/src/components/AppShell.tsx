@@ -24,7 +24,7 @@ export function AppShell({
   // 只渲染一套布局：避免同一页面挂载两份（会重复请求、重复上报）
   if (!wide) {
     return (
-      <div className="flex h-full w-full flex-col overflow-hidden bg-ink">
+      <div className="flex h-full w-full flex-col overflow-hidden bg-surface">
         {/* 底部播放条 + 悬浮导航是常驻的，内容区留出高度，滚到底不会被压住 */}
         <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[124px]">{children}</main>
         {footer}
@@ -34,7 +34,7 @@ export function AppShell({
 
   // 横屏：左侧舞台已包含全部播放控制，底部不再挂播放条，只留悬浮导航
   return (
-    <div className="flex h-full w-full overflow-hidden bg-ink">
+    <div className="flex h-full w-full overflow-hidden bg-surface">
       {/* 左侧舞台区：容器本身不接收触摸（pointer-events:none），只有内部播放面板例外 */}
       <aside className="dead-zone shrink-0" style={{ width: 'var(--dead-zone)' }}>
         <StageSlot title={title}>{stage}</StageSlot>
@@ -62,10 +62,41 @@ function StageSlot({ title, children }: { title?: string; children?: ReactNode }
   )
 }
 
+/**
+ * 吸顶页头。
+ *
+ * M3 里「吸顶」靠不透明的 surface 维持层级，不靠磨砂：
+ * 滚动的内容会从它底下经过，半透明就会透出花掉的文字。
+ * 所以这里是实色 surface-container + 一条 outline-variant 弱分隔线，
+ * 边框只画在底部一条——头部的上/左右不再额外叠加描边或阴影。
+ */
+export function PageHeader({
+  children,
+  className,
+  sticky = true,
+}: {
+  children: ReactNode
+  className?: string
+  sticky?: boolean
+}) {
+  return (
+    <header
+      className={cn(
+        'z-20 bg-surface-container-low',
+        sticky ? 'sticky top-0' : 'relative',
+        'border-b border-outline-variant',
+        className,
+      )}
+    >
+      {children}
+    </header>
+  )
+}
+
 export function SectionTitle({ title, action }: { title: string; action?: ReactNode }) {
   return (
     <div className="mb-3 flex items-center justify-between">
-      <h2 className="text-[19px] font-bold text-white">{title}</h2>
+      <h2 className="text-[19px] font-bold text-on-surface">{title}</h2>
       {action}
     </div>
   )
@@ -77,6 +108,11 @@ export function ChipRail({ children, className }: { children: ReactNode; classNa
   )
 }
 
+/**
+ * 筛选 chip：M3 里 chip 只承载筛选/属性，不是主操作按钮。
+ * - 选中：secondary-container 底 + on-secondary-container 字 + 透明描边兜住形状
+ * - 未选中：透明底 + outline 描边 + on-surface-variant 字
+ */
 export function Chip({
   active,
   children,
@@ -89,11 +125,14 @@ export function Chip({
   return (
     <button
       type="button"
+      aria-pressed={active}
       onClick={onClick}
       className={cn(
-        'shrink-0 whitespace-nowrap rounded-full px-4 text-[15px] transition-colors',
+        'shrink-0 whitespace-nowrap rounded-full border px-4 text-[15px] transition-colors',
         'min-h-[44px]', // chips 44，热区再被 .tap 伪元素撑到 48
-        active ? 'bg-gcores text-white' : 'bg-card text-[#cfd3da] active:bg-[#2a2f3a]',
+        active
+          ? 'border-transparent bg-secondary-container font-medium text-on-secondary-container'
+          : 'border-outline text-on-surface-variant hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]',
       )}
     >
       {children}

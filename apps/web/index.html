@@ -8,6 +8,23 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <title>机核播客 · 触屏版</title>
+    <script>
+      // 主题要在首帧之前定下来，否则浅色主题会先闪一下深色
+      (function () {
+        try {
+          var v = localStorage.getItem('gcores.theme.v1')
+          if (v !== 'light' && v !== 'dark') {
+            v = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+          }
+          document.documentElement.setAttribute('data-theme', v)
+          document
+            .querySelector('meta[name="theme-color"]')
+            .setAttribute('content', v === 'light' ? '#fdf8f8' : '#0f1115')
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark')
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

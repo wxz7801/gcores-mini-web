@@ -45,16 +45,16 @@ export function RadioRow({
       <button
         type="button"
         onClick={() => nav(`/radio/${radio.id}`)}
-        className="h-[56px] w-[56px] shrink-0 overflow-hidden rounded-[10px] bg-card"
+        className="h-[56px] w-[56px] shrink-0 overflow-hidden rounded-lg bg-surface-container"
         aria-label={radio.title}
       >
         <CoverImage src={coverUrl(radio.cover, 160)} className="h-full w-full object-cover" />
       </button>
 
       <button type="button" onClick={() => nav(`/radio/${radio.id}`)} className="min-w-0 flex-1 text-left">
-        <div className="line-clamp-2 text-[16px] leading-[1.35] text-[#e8eaef]">{radio.title}</div>
-        <div className="mt-1 flex items-center gap-1.5 truncate text-[13px] text-[#7d8594]">
-          {radio.isRequirePrivilege && <span className="rounded bg-[#3a2a1e] px-1 text-[12px] text-timeline">GPASS</span>}
+        <div className="line-clamp-2 text-[16px] leading-[1.35] text-on-surface">{radio.title}</div>
+        <div className="mt-1 flex items-center gap-1.5 truncate text-[13px] text-on-surface-variant">
+          {radio.isRequirePrivilege && <span className="rounded bg-timeline-container px-1 text-[12px] text-on-timeline-container">GPASS</span>}
           <span className="truncate">{radio.categories[0]?.name ?? '播客'}</span>
           <span>·</span>
           <span>{formatTime(radio.duration)}</span>
@@ -76,8 +76,10 @@ export function RadioRow({
         }}
         aria-label={isPlaying ? '暂停' : '播放'}
         className={cn(
-          'flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2',
-          isCurrent ? 'border-gcores bg-gcores text-white' : 'border-gcores/70 text-gcores active:bg-gcores/10',
+          'flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
+          isCurrent
+            ? 'border-primary bg-primary text-on-primary'
+            : 'border-primary text-primary hover:bg-primary/[0.08] active:bg-primary/[0.1]',
         )}
       >
         {isPlaying ? (

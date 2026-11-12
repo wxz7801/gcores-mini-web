@@ -53,9 +53,9 @@ export function SeriesPage() {
 
   if (!series) {
     return (
-      <div className="px-4 py-16 text-center text-[15px] text-[#8a92a3]">
+      <div className="px-4 py-16 text-center text-[15px] text-on-surface-variant">
         没有这个系列{' '}
-        <button type="button" onClick={() => nav('/')} className="text-gcores">
+        <button type="button" onClick={() => nav('/')} className="text-primary">
           回到首页
         </button>
       </div>
@@ -75,7 +75,7 @@ export function SeriesPage() {
           type="button"
           onClick={() => nav(-1)}
           aria-label="返回"
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-md active:bg-black/70"
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary-container text-on-secondary-container hover:brightness-110 active:brightness-95"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M15 5l-7 7 7 7" />
@@ -87,27 +87,27 @@ export function SeriesPage() {
       <section className="px-4">
         <div className="flex items-start gap-4">
           <div
-            className="w-[40%] max-w-[180px] shrink-0 overflow-hidden rounded-2xl bg-card shadow-[0_10px_30px_rgba(0,0,0,.45)]"
+            className="w-[40%] max-w-[180px] shrink-0 overflow-hidden rounded-xl bg-surface-container-high"
             style={{ aspectRatio: '1 / 1' }}
           >
             {data?.cover && <CoverImage src={coverUrl(data.cover, 420, 420)} className="h-full w-full object-cover" />}
           </div>
           <div className="min-w-0 flex-1 pt-1">
-            <h1 className="text-[26px] leading-snug font-bold text-white">{series.name}</h1>
+            <h1 className="text-[26px] leading-snug font-bold text-on-surface">{series.name}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[13px]">
-              <span className="rounded bg-[#8b1e26]/85 px-1.5 py-0.5 text-white">GPASS 专享</span>
-              <span className="rounded bg-card px-1.5 py-0.5 text-[#a3aab8]">{shownCount || '…'} 期</span>
+              <span className="rounded bg-timeline-container px-1.5 py-0.5 text-on-surface">GPASS 专享</span>
+              <span className="rounded-md bg-surface-container-highest px-1.5 py-0.5 text-on-surface-variant">{shownCount || '…'} 期</span>
               {volRange && (
-                <span className="rounded bg-card px-1.5 py-0.5 text-[#a3aab8]">
+                <span className="rounded-md bg-surface-container-highest px-1.5 py-0.5 text-on-surface-variant">
                   VOL.{volRange.min}–{volRange.max}
                 </span>
               )}
-              <span className="rounded bg-card px-1.5 py-0.5 text-[#a3aab8]">{series.seasonIds.length} 季</span>
+              <span className="rounded-md bg-surface-container-highest px-1.5 py-0.5 text-on-surface-variant">{series.seasonIds.length} 季</span>
             </div>
           </div>
         </div>
 
-        <p className="mt-4 text-[15px] leading-[1.75] whitespace-pre-line break-words text-[#a3aab8]">{series.desc}</p>
+        <p className="mt-4 text-[15px] leading-[1.75] whitespace-pre-line break-words text-on-surface-variant">{series.desc}</p>
 
         <div className="mt-4 flex gap-2">
           <button
@@ -118,7 +118,7 @@ export function SeriesPage() {
               if (!first) return
               void playTrack(toTrack(first.radio), queueTracks)
             }}
-            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-gcores text-[17px] font-medium text-white active:brightness-110 disabled:opacity-40"
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-primary text-[17px] font-medium text-on-primary hover:brightness-110 active:brightness-95 disabled:opacity-40"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <path d="M7 4l14 8-14 8z" />
@@ -140,7 +140,9 @@ export function SeriesPage() {
             }}
             className={cn(
               'shrink-0 rounded-full px-3.5 py-2 text-[15px] whitespace-nowrap',
-              season === t.key ? 'bg-white text-black' : 'bg-card text-[#a3aab8] active:bg-[#262b34]',
+              season === t.key
+                ? 'border border-transparent bg-secondary-container text-on-secondary-container'
+                : 'border border-outline text-on-surface-variant hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]',
             )}
           >
             {t.label}
@@ -150,11 +152,11 @@ export function SeriesPage() {
 
       <div className="mt-3 px-4">
         {q.isLoading && (
-          <div className="py-10 text-center text-[15px] text-[#8a92a3]">正在把 {series.name} 的几季拼起来…</div>
+          <div className="py-10 text-center text-[15px] text-on-surface-variant">正在把 {series.name} 的几季拼起来…</div>
         )}
-        {q.isError && <div className="py-10 text-center text-[15px] text-[#8a92a3]">加载失败，稍后再试</div>}
+        {q.isError && <div className="py-10 text-center text-[15px] text-on-surface-variant">加载失败，稍后再试</div>}
         {!q.isLoading && !episodes.length && (
-          <div className="py-10 text-center text-[15px] text-[#8a92a3]">这个系列还没有节目</div>
+          <div className="py-10 text-center text-[15px] text-on-surface-variant">这个系列还没有节目</div>
         )}
       </div>
 
@@ -168,19 +170,19 @@ export function SeriesPage() {
         <button
           type="button"
           onClick={() => setLimit((n) => n + 80)}
-          className="mx-auto mt-6 block h-12 rounded-full bg-card px-8 text-[15px] text-[#cfd3da] active:bg-[#262b34]"
+          className="mx-auto mt-6 block h-12 rounded-full border border-outline px-8 text-[15px] text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
         >
           再看 80 期（还剩 {episodes.length - visible.length} 期）
         </button>
       )}
 
       {data && (
-        <p className="mt-6 px-4 text-center text-[13px] leading-relaxed text-[#5c6371]">
+        <p className="mt-6 px-4 text-center text-[13px] leading-relaxed text-outline">
           数据来自 {series.seasonIds.length} 张专辑：
           {data.seasons.map((s, i) => (
             <span key={s.id}>
               {i > 0 && ' · '}
-              <Link to={`/playlist/${s.id}`} className="text-[#8a92a3] underline-offset-2 active:underline">
+              <Link to={`/playlist/${s.id}`} className="text-on-surface-variant underline-offset-2 active:underline">
                 {s.title || s.id}
               </Link>
             </span>
@@ -199,12 +201,12 @@ function SeriesRow({ ep, current, queue }: { ep: Episode; current: boolean; queu
   const r = ep.radio
 
   return (
-    <li className={cn('flex items-center gap-3 rounded-xl px-2 py-2', current && 'bg-gcores/10')}>
-      <span className="w-10 shrink-0 text-center font-mono text-[13px] leading-tight text-[#5c6371]">
+    <li className={cn('flex items-center gap-3 rounded-xl px-2 py-2', current && 'bg-primary-container')}>
+      <span className="w-10 shrink-0 text-center font-mono text-[13px] leading-tight text-outline">
         {ep.vol !== null ? (
           <>
             <span className="block text-[11px]">VOL</span>
-            <span className={cn('block text-[14px]', current && 'text-gcores')}>{ep.vol}</span>
+            <span className={cn('block text-[14px]', current ? 'text-on-primary-container' : 'text-outline')}>{ep.vol}</span>
           </>
         ) : (
           <span className="block text-[12px] text-timeline">番外</span>
@@ -214,15 +216,15 @@ function SeriesRow({ ep, current, queue }: { ep: Episode; current: boolean; queu
       <button
         type="button"
         onClick={() => nav(`/radio/${r.id}`)}
-        className="h-[56px] w-[56px] shrink-0 overflow-hidden rounded-[10px] bg-card"
+        className="h-[56px] w-[56px] shrink-0 overflow-hidden rounded-[10px] bg-surface-container-high"
         aria-label={r.title}
       >
         <CoverImage src={coverUrl(r.cover, 160)} className="h-full w-full object-cover" />
       </button>
 
       <button type="button" onClick={() => nav(`/radio/${r.id}`)} className="min-w-0 flex-1 text-left">
-        <div className="line-clamp-2 text-[16px] leading-[1.35] text-[#e8eaef]">{r.title}</div>
-        <div className="mt-1 flex items-center gap-1.5 truncate text-[13px] text-[#7d8594]">
+        <div className="line-clamp-2 text-[16px] leading-[1.35] text-on-surface">{r.title}</div>
+        <div className="mt-1 flex items-center gap-1.5 truncate text-[13px] text-on-surface-variant">
           <span>{formatTime(r.duration)}</span>
           <span>·</span>
           <span className="shrink-0">{relativeDate(r.publishedAt)}</span>
@@ -241,7 +243,9 @@ function SeriesRow({ ep, current, queue }: { ep: Episode; current: boolean; queu
         aria-label={current && playing ? '暂停' : '播放'}
         className={cn(
           'flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2',
-          current ? 'border-gcores bg-gcores text-white' : 'border-gcores/70 text-gcores active:bg-gcores/10',
+          current
+            ? 'border-primary bg-primary text-on-primary'
+            : 'border-primary text-primary hover:bg-primary/[0.08] active:bg-primary/[0.1]',
         )}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
