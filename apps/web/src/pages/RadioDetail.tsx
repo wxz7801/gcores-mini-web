@@ -13,6 +13,7 @@ import {
   type RadioDetail,
 } from '../api/gcores'
 import { CoverImage } from '../components/CoverImage'
+import { PageHeader } from '../components/AppShell'
 import { RadioRow } from '../components/RadioRow'
 import { coverUrl, formatTime, relativeDate, cn } from '../lib/format'
 import { useTimelines } from '../hooks/useTimelines'
@@ -45,6 +46,18 @@ export function RadioDetailPage() {
 
   const detail = q.data
   const isCurrent = current?.radioId === detail?.id
+
+  // 吸顶头的真实高度：竖屏带状态栏留白、横屏不带，不能写死一个 top
+  const headerRef = useRef<HTMLElement | null>(null)
+  const [headH, setHeadH] = useState(56)
+  useEffect(() => {
+    const el = headerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(() => setHeadH(Math.round(el.getBoundingClientRect().height)))
+    ro.observe(el)
+    setHeadH(Math.round(el.getBoundingClientRect().height))
+    return () => ro.disconnect()
+  }, [])
 
   // 时间轴单独按 mediaId 取：详情接口的 include 不稳定，media 路由最可靠
   const tl = useTimelines(detail?.id)
@@ -87,7 +100,8 @@ export function RadioDetailPage() {
 
   return (
     <div className="pb-40">
-      <header className="sticky top-0 z-20 flex items-center gap-2 border-b border-outline-variant bg-surface-container-low px-2 pt-[max(8px,env(safe-area-inset-top))] pb-2">
+      {/* 头部吸顶到 0；下面的 Tab 条用 style 里的 top 贴在它下沿，高度按实测来（竖屏带状态栏留白，不是 56） */}
+      <PageHeader ref={headerRef} className="flex items-center gap-2 px-2 pt-[max(8px,env(safe-area-inset-top))] pb-2">
         <button type="button" onClick={() => nav(-1)} aria-label="返回" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M15 5l-7 7 7 7" />
@@ -115,7 +129,7 @@ export function RadioDetailPage() {
             <path d="M6 4h12a1 1 0 011 1v15l-7-4.5L5 20V5a1 1 0 011-1z" />
           </svg>
         </button>
-      </header>
+      </PageHeader>
 
       {q.isLoading && <SkeletonDetail />}
       {q.error && <div className="px-4 py-10 text-center text-[15px] text-on-surface-variant">加载失败，下拉重试</div>}
@@ -176,7 +190,7 @@ export function RadioDetailPage() {
           </div>
 
           {/* Tab：时间轴 / 简介 / 评论 */}
-          <div className="sticky top-[56px] z-10 mt-3 flex gap-1 border-b border-outline-variant bg-surface-container-low px-3 pt-1">
+          <div className="sticky z-10 mt-3 flex gap-1 border-b border-outline-variant bg-surface-container-low px-3 pt-1" style={{ top: headH }}>
             {(
               [
                 ...(timelines.length ? [{ id: 'timeline' as Tab, label: '时间轴' }] : []),

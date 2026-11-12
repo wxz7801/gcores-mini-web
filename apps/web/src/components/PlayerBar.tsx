@@ -1,6 +1,7 @@
 import { usePlayer } from '../store/player'
 import { CoverImage } from './CoverImage'
 import { formatTime } from '../lib/format'
+import { Icon } from './Icon'
 
 /**
  * 竖屏底部迷你播放条（压在 navigation bar 上方）。
@@ -43,12 +44,20 @@ export function PlayerBar() {
       <span className="absolute inset-x-0 top-0 h-[3px] bg-surface-variant">
         <span className="block h-full bg-primary" style={{ width: `${pct}%` }} />
       </span>
+      {/* 缓冲提示挂在进度条上（原来挤在时间行里，会把「00:12 / 25:41」顶掉） */}
+      {loading && (
+        <span className="absolute inset-x-0 top-0 flex justify-center">
+          <span className="rounded-b-md bg-surface-container-highest px-2 py-0.5 text-[11px] leading-4 text-on-surface-variant">
+            缓冲中…
+          </span>
+        </span>
+      )}
       <span className="mx-auto flex w-full max-w-[1440px] items-center gap-3 px-3 py-2.5 2xl:max-w-[1600px]">
         <CoverImage src={current.cover} className="h-12 w-12 shrink-0 rounded-lg object-cover" />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[15px] font-medium text-on-surface">{current.title}</span>
           <span className="mt-1 block truncate text-[13px] text-on-surface-variant">
-            {loading ? '缓冲中…' : `${formatTime(position)} / ${formatTime(duration || current.duration)}`}
+            {formatTime(position)} / {formatTime(duration || current.duration)}
           </span>
         </span>
         {/* 主操作 = M3 filled icon button；次操作 = standard icon button */}
@@ -63,16 +72,7 @@ export function PlayerBar() {
           aria-label={playing ? '暂停' : '播放'}
           className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary active:brightness-110"
         >
-          {playing ? (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="6" y="5" width="4" height="14" rx="1" />
-              <rect x="14" y="5" width="4" height="14" rx="1" />
-            </svg>
-          ) : (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M7 4l14 8-14 8z" />
-            </svg>
-          )}
+          {playing ? <Icon name="pause" size={24} /> : <Icon name="play_arrow" size={24} />}
         </span>
         <span
           role="button"
@@ -84,10 +84,7 @@ export function PlayerBar() {
           aria-label="下一个"
           className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-on-surface-variant active:bg-on-surface/[0.1]"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M5 5l10 7-10 7z" />
-            <rect x="17" y="5" width="2.5" height="14" rx="1" />
-          </svg>
+          <Icon name="skip_next" size={26} />
         </span>
       </span>
     </button>

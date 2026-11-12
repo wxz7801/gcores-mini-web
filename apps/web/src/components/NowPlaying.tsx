@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { usePlayer } from '../store/player'
 import { useWideLandscape } from '../hooks/useLayout'
-import { cn, formatTime } from '../lib/format'
+import { cn, formatTime, SKIP_SECONDS } from '../lib/format'
 import { CoverImage } from './CoverImage'
+import { Icon } from './Icon'
 
 const RATES = [0.75, 1, 1.25, 1.5, 2]
 
@@ -52,8 +53,8 @@ export function NowPlaying() {
         e.preventDefault()
         toggle()
       }
-      if (e.key === 'ArrowLeft') skip(-15)
-      if (e.key === 'ArrowRight') skip(15)
+      if (e.key === 'ArrowLeft') skip(-SKIP_SECONDS)
+      if (e.key === 'ArrowRight') skip(SKIP_SECONDS)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -94,9 +95,7 @@ export function NowPlaying() {
             onClick={() => setExpanded(false)}
             className="flex h-14 w-14 items-center justify-center rounded-full text-on-surface-variant hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
           >
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <Icon name="expand_more" size={28} />
           </button>
           <div className="text-[13px] tracking-wide text-on-surface-variant">正在播放</div>
           <Link
@@ -105,10 +104,7 @@ export function NowPlaying() {
             aria-label="节目详情"
             className="flex h-14 w-14 items-center justify-center rounded-full text-on-surface-variant hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
-              <path d="M12 11v6M12 7.6v.4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-            </svg>
+            <Icon name="info" size={26} />
           </Link>
         </div>
 
@@ -187,11 +183,11 @@ export function NowPlaying() {
         <div className="mt-3 flex items-center justify-between">
           <button
             type="button"
-            aria-label="后退15秒"
-            onClick={() => skip(-15)}
+            aria-label={`后退${SKIP_SECONDS}秒`}
+            onClick={() => skip(-SKIP_SECONDS)}
             className="flex h-16 w-16 items-center justify-center rounded-full text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
           >
-            <Back15 />
+            <Icon name="replay_10" size={34} />
           </button>
           <button
             type="button"
@@ -220,11 +216,11 @@ export function NowPlaying() {
           </button>
           <button
             type="button"
-            aria-label="前进15秒"
-            onClick={() => skip(15)}
+            aria-label={`前进${SKIP_SECONDS}秒`}
+            onClick={() => skip(SKIP_SECONDS)}
             className="flex h-16 w-16 items-center justify-center rounded-full text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
           >
-            <Fwd15 />
+            <Icon name="forward_10" size={34} />
           </button>
         </div>
 
@@ -280,55 +276,16 @@ export function NowPlaying() {
 }
 
 function PlayIcon() {
-  return (
-    <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M8 5.14v13.72a1 1 0 001.52.85l11.14-6.86a1 1 0 000-1.7L9.52 4.29A1 1 0 008 5.14z" />
-    </svg>
-  )
+  return <Icon name="play_arrow" size={38} />
 }
 function PauseIcon() {
-  return (
-    <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <rect x="6" y="4" width="4.5" height="16" rx="1.5" />
-      <rect x="13.5" y="4" width="4.5" height="16" rx="1.5" />
-    </svg>
-  )
+  return <Icon name="pause" size={38} />
 }
 function PrevIcon() {
-  return (
-    <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M18 5.5v13a1 1 0 01-1.55.83L8 14V18a1 1 0 01-2 0V6a1 1 0 012 0v4l8.45-5.33A1 1 0 0118 5.5z" />
-    </svg>
-  )
+  return <Icon name="skip_previous" size={32} />
 }
 function NextIcon() {
-  return (
-    <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M6 5.5v13a1 1 0 001.55.83L16 14v4a1 1 0 002 0V6a1 1 0 00-2 0v4L7.55 4.67A1 1 0 006 5.5z" />
-    </svg>
-  )
-}
-function Back15() {
-  return (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M11 4L5 9l6 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M5 9h8a7 7 0 010 14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <text x="12" y="17.5" fontSize="7" fill="currentColor" fontWeight="700">
-        15
-      </text>
-    </svg>
-  )
-}
-function Fwd15() {
-  return (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M13 4l6 5-6 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M19 9h-8a7 7 0 000 14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <text x="7" y="17.5" fontSize="7" fill="currentColor" fontWeight="700">
-        15
-      </text>
-    </svg>
-  )
+  return <Icon name="skip_next" size={32} />
 }
 function Spinner() {
   return (

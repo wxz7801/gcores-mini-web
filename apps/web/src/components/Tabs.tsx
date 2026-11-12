@@ -1,13 +1,15 @@
 import { NavLink } from 'react-router-dom'
 import { cn } from '../lib/format'
 import { useWideLandscape } from '../hooks/useLayout'
+import { Icon } from './Icon'
+import type { SymbolName } from '../lib/symbols'
 
 /** 导航条目：发现 · 播单 · 有声书 · 我的（栏目已由播单替代） */
-const items = [
-  { to: '/', label: '发现', icon: HomeIcon },
-  { to: '/playlists', label: '播单', icon: GridIcon },
-  { to: '/audiobooks', label: '有声书', icon: BookIcon },
-  { to: '/me', label: '我的', icon: UserIcon },
+const items: { to: string; label: string; icon: SymbolName }[] = [
+  { to: '/', label: '发现', icon: 'home' },
+  { to: '/playlists', label: '播单', icon: 'playlist_play' },
+  { to: '/audiobooks', label: '有声书', icon: 'auto_stories' },
+  { to: '/me', label: '我的', icon: 'person' },
 ]
 
 /**
@@ -63,7 +65,7 @@ export function FloatingNav() {
                   s.isActive ? 'bg-secondary-container' : 'bg-transparent',
                 )}
               >
-                <it.icon active={s.isActive} />
+                <Icon name={it.icon} size={24} />
               </span>
               <span className="leading-none">{it.label}</span>
             </>
@@ -71,40 +73,5 @@ export function FloatingNav() {
         </NavLink>
       ))}
     </nav>
-  )
-}
-
-function HomeIcon({ active }: { active?: boolean }) {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.4 : 2} aria-hidden="true">
-      <path d="M3.5 10.6 12 3.5l8.5 7.1V19a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19z" strokeLinejoin="round" />
-      <path d="M9.5 20.5v-6h5v6" strokeLinejoin="round" opacity=".7" />
-    </svg>
-  )
-}
-function GridIcon({ active }: { active?: boolean }) {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.4 : 2} aria-hidden="true">
-      <rect x="3.5" y="3.5" width="7" height="7" rx="2" />
-      <rect x="13.5" y="3.5" width="7" height="7" rx="2" />
-      <rect x="3.5" y="13.5" width="7" height="7" rx="2" />
-      <rect x="13.5" y="13.5" width="7" height="7" rx="2" />
-    </svg>
-  )
-}
-function BookIcon({ active }: { active?: boolean }) {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.4 : 2} aria-hidden="true">
-      <path d="M5.5 4.5h9a3 3 0 0 1 3 3V20H8a2.5 2.5 0 0 1-2.5-2.5z" strokeLinejoin="round" />
-      <path d="M5.5 17h12" opacity=".7" />
-    </svg>
-  )
-}
-function UserIcon({ active }: { active?: boolean }) {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.4 : 2} aria-hidden="true">
-      <circle cx="12" cy="8.5" r="4" />
-      <path d="M4.5 20.5c1.4-4.2 4-6.2 7.5-6.2s6.1 2 7.5 6.2" strokeLinecap="round" />
-    </svg>
   )
 }

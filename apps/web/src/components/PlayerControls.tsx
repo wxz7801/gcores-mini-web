@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { usePlayer } from '../store/player'
-import { formatTime } from '../lib/format'
+import { formatTime, SKIP_SECONDS } from '../lib/format'
+import { Icon } from './Icon'
 
 /** 图标钮：命中区 56px，圆形，M3 的 state layer 只用 8% / 10% 两档 */
 function IconBtn({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
@@ -17,7 +18,7 @@ function IconBtn({ label, onClick, children }: { label: string; onClick: () => v
 }
 
 /**
- * 播放控制栏：时间 + 进度 + 一行五宫格（后退 15 / 上一集 / 播放 / 下一集 / 前进 15）。
+ * 播放控制栏：时间 + 进度 + 一行五宫格（后退 10 / 上一集 / 播放 / 下一集 / 前进 10）。
  *
  * 横屏大屏放在左侧舞台里紧跟封面；竖屏放在底部堆叠里、压在底栏上方。
  * 两处共用同一份，避免按钮顺序/尺寸各写一套走样。
@@ -49,18 +50,11 @@ export function PlayerControls({ className = '', seekHeight = 56 }: PlayerContro
     <StageSeekBar pct={pct} position={position} total={total} onSeek={seek} height={seekHeight} />
 
     <div className="mt-2 grid grid-cols-5 items-center">
-      <IconBtn label="后退 15 秒" onClick={() => skip(-15)}>
-        <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
-          <path d="M12 5a7 7 0 1 1-6.5 4.5" />
-          <path d="M4 4.5V9h4.5" />
-          <text x="12" y="15.5" textAnchor="middle" fontSize="7" fill="currentColor" stroke="none">15</text>
-        </svg>
+      <IconBtn label={`后退 ${SKIP_SECONDS} 秒`} onClick={() => skip(-SKIP_SECONDS)}>
+        <Icon name="replay_10" size={30} />
       </IconBtn>
       <IconBtn label="上一集" onClick={prev}>
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19 5l-10 7 10 7z" />
-          <rect x="5" y="5" width="2.5" height="14" rx="1" />
-        </svg>
+        <Icon name="skip_previous" size={28} />
       </IconBtn>
       <div className="flex items-center justify-center">
         <button
@@ -69,30 +63,14 @@ export function PlayerControls({ className = '', seekHeight = 56 }: PlayerContro
           aria-label={playing ? '暂停' : '播放'}
           className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-primary text-on-primary hover:brightness-110 active:brightness-95"
           >
-          {playing ? (
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor">
-            <rect x="6" y="4" width="4.5" height="16" rx="1" />
-            <rect x="13.5" y="4" width="4.5" height="16" rx="1" />
-          </svg>
-          ) : (
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M8 4l13 8-13 8z" />
-          </svg>
-          )}
+          {playing ? <Icon name="pause" size={34} /> : <Icon name="play_arrow" size={34} />}
         </button>
       </div>
       <IconBtn label="下一集" onClick={next}>
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M5 5l10 7-10 7z" />
-          <rect x="16.5" y="5" width="2.5" height="14" rx="1" />
-        </svg>
+        <Icon name="skip_next" size={28} />
       </IconBtn>
-      <IconBtn label="前进 15 秒" onClick={() => skip(15)}>
-        <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
-          <path d="M12 5a7 7 0 1 0 6.5 4.5" />
-          <path d="M20 4.5V9h-4.5" />
-          <text x="12" y="15.5" textAnchor="middle" fontSize="7" fill="currentColor" stroke="none">15</text>
-        </svg>
+      <IconBtn label={`前进 ${SKIP_SECONDS} 秒`} onClick={() => skip(SKIP_SECONDS)}>
+        <Icon name="forward_10" size={30} />
       </IconBtn>
     </div>
 
@@ -147,8 +125,8 @@ function StageSeekBar({
       }}
       onPointerCancel={() => setDrag(null)}
       onKeyDown={(e) => {
-        if (e.key === 'ArrowLeft') onSeek(Math.max(0, position - 15))
-        if (e.key === 'ArrowRight') onSeek(Math.min(total, position + 15))
+        if (e.key === 'ArrowLeft') onSeek(Math.max(0, position - SKIP_SECONDS))
+        if (e.key === 'ArrowRight') onSeek(Math.min(total, position + SKIP_SECONDS))
       }}
       className="relative flex items-center touch-none"
       style={{ height }}

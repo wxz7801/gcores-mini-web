@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ReactNode, Ref } from 'react'
 import { cn } from '../lib/format'
 import { useWideLandscape } from '../hooks/useLayout'
 
@@ -24,7 +24,7 @@ export function AppShell({
   // 只渲染一套布局：避免同一页面挂载两份（会重复请求、重复上报）
   if (!wide) {
     return (
-      <div className="flex h-full w-full flex-col overflow-hidden bg-surface">
+      <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-surface">
         {/* 底部播放条 + 悬浮导航是常驻的，内容区留出高度，滚到底不会被压住 */}
         {/* 底部是两层堆叠：播放控制栏（64）+ 导航底栏（64），内容留出高度免得被压住 */}
         <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[140px]">{children}</main>
@@ -35,7 +35,7 @@ export function AppShell({
 
   // 横屏：左侧舞台已包含全部播放控制，底部不再挂播放条，只留悬浮导航
   return (
-    <div className="flex h-full w-full overflow-hidden bg-surface">
+    <div className="flex h-full min-h-0 w-full overflow-hidden bg-surface">
       {/* 左侧舞台区：容器本身不接收触摸（pointer-events:none），只有内部播放面板例外 */}
       <aside className="dead-zone shrink-0" style={{ width: 'var(--dead-zone)' }}>
         <StageSlot title={title}>{stage}</StageSlot>
@@ -75,13 +75,17 @@ export function PageHeader({
   children,
   className,
   sticky = true,
+  ref,
 }: {
   children: ReactNode
   className?: string
   sticky?: boolean
+  /** 需要量高度（下面还要贴一条吸顶页签）的页面把 ref 递进来 */
+  ref?: Ref<HTMLElement>
 }) {
   return (
     <header
+      ref={ref}
       className={cn(
         'z-20 bg-surface-container-low',
         sticky ? 'sticky top-0' : 'relative',

@@ -50,3 +50,7 @@ export function plural(n: number): string {
   if (n >= 10000) return `${(n / 10000).toFixed(1)}万`
   return String(n)
 }
+
+/** 快进 / 快退一次的秒数。
+ *  和 Material Symbols 的 replay_10 / forward_10 对齐——图标上印的是 10，点的就得是 10 秒。 */
+export const SKIP_SECONDS = 10

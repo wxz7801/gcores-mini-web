@@ -5,6 +5,7 @@ import { usePlayer } from '../store/player'
 import type { Track } from '../store/player'
 import { CoverImage } from './CoverImage'
 import { cn, formatTime } from '../lib/format'
+import { Icon } from './Icon'
 
 /**
  * 悬浮菜单（参考 gcores.com 卡片上的 “+” 浮层）：
@@ -59,9 +60,7 @@ export function QueueMenu({ track, onClose }: { track: Track; onClose: () => voi
             queued ? 'text-on-surface-variant' : 'text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]',
           )}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M4 7h11M4 12h8M4 17h6M18 8v8M14 12h8" />
-          </svg>
+          <Icon name="playlist_play" size={20} />
           {queued ? '已在播放队列' : added ? '已加入播放队列' : '加入播放队列'}
         </button>
         <button
@@ -87,9 +86,7 @@ export function QueueMenu({ track, onClose }: { track: Track; onClose: () => voi
           }}
           className="flex min-h-[52px] w-full items-center gap-2 border-t border-outline-variant px-4 py-3 text-left text-[16px] text-primary hover:bg-primary/[0.08] active:bg-primary/[0.1]"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M7 4l14 8-14 8z" />
-          </svg>
+          <Icon name="play_arrow" size={20} />
           立即播放
         </button>
         <Link
@@ -97,10 +94,7 @@ export function QueueMenu({ track, onClose }: { track: Track; onClose: () => voi
           onClick={onClose}
           className="flex min-h-[52px] w-full items-center gap-2.5 px-4 text-[16px] text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 8v-.01M12 12v4" />
-            <circle cx="12" cy="12" r="9" />
-          </svg>
+          <Icon name="info" size={20} />
           节目详情
         </Link>
         {queued && (
@@ -112,9 +106,7 @@ export function QueueMenu({ track, onClose }: { track: Track; onClose: () => voi
             }}
             className="flex min-h-[52px] w-full items-center gap-2 border-t border-outline-variant px-4 py-3 text-left text-[16px] text-on-surface-variant hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M5 7h14M9 7V5h6v2M7 7l1 13h8l1-13" />
-            </svg>
+            <Icon name="delete" size={20} />
             从队列移除
           </button>
         )}

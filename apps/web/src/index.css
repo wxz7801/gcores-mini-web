@@ -76,6 +76,9 @@ body,
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   overscroll-behavior-y: none;
+  /* 整页不滚：AppShell 是 100% 高的定高框架，滚动只发生在内部的 main / 时间轴列表里。 */
+  overflow: hidden;
+  overflow: clip;
 }
 
 /* 竖屏禁止横滑回退手势，保留列表内部横向滚动 */
@@ -168,4 +171,13 @@ img.img-ready {
 }
 img.img-ready.img-loaded {
   opacity: 1;
+}
+
+/* 滚动容器统一用 overlay 式滚动条：不留槽位，内容宽度不会因为滚动条出现/消失
+   而和吸顶的头部差几个像素（差这几像素，吸顶的页签条就压不住头部的底边）。 */
+html {
+  scrollbar-gutter: auto;
+}
+* {
+  scrollbar-width: thin;
 }

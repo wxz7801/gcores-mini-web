@@ -58,9 +58,13 @@ function StagePanel() {
         className="group my-auto flex min-h-0 flex-col focus:outline-none"
         style={{ cursor: 'pointer' }}
       >
-        {/* 封面按栏宽等比封顶（栏宽 372 → 约 264px 高，和常见方图的边长差不多），
-            不再用 flex-1 把封面拽满整栏 */}
-        <div className="relative flex items-center justify-center" style={{ height: '71cqw', maxHeight: '100%' }}>
+        {/* 封面按容器比例定高：先用 cqw 撑到接近整栏宽，再用 CQH 从总量上封顶，
+            这样短屏（车机 12.3 寸那类）也不会把控制栏挤出屏幕。
+            两档都不再用 flex-1，避免封面被拽满整栏、控制栏被推到底 */}
+        <div
+          className="relative flex items-center justify-center"
+          style={{ height: 'min(100cqw, 100cqh - 262px)' }}
+        >
           {/* 按封面真实宽高比放大到可用区域（不裁切、不拉伸），竖版/方图/横版都保持原样。
               父容器是 flex 项，直接给 img 百分比高度会被撑破，所以用绝对定位兜住 */}
           <CoverImage
