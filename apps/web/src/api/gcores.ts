@@ -86,6 +86,8 @@ export interface RadioListItem {
   isRequirePrivilege: boolean
   /** audio=直链 mp3/m4a；hls=机核 FM 的 m3u8 分片流 */
   playbackType: 'file' | 'hls'
+  /** 媒体是受保护的（录音笔 / GPASS 节目）：必须走收听会话，直链 404 */
+  isProtectedAudio: boolean
   isFm: boolean
   /** 入驻播客（RSS 导入的第三方播客），对应栏目「入驻播客」 */
   isImported: boolean
@@ -121,6 +123,7 @@ function toRadioItem(r: JsonApiResource<RadioAttrs>, included: JsonApiResource[]
     isFree: r.attributes['is-free'],
     isRequirePrivilege: r.attributes['is-require-privilege'],
     playbackType: r.attributes['is-fm'] ? 'hls' : 'file',
+    isProtectedAudio: (lookup.get(`medias:${mediaId}`)?.attributes as MediaAttrs | undefined)?.['media-type'] === 'protected_audio',
     isFm: Boolean(r.attributes['is-fm']),
     isImported: catIds.some((id) => (lookup.get(`categories:${id}`)?.attributes.name as string) === '入驻播客'),
     mediaId: mediaId ?? null,
@@ -193,6 +196,8 @@ export interface RadioDetail {
   plays: number
   isFree: boolean
   isRequirePrivilege: boolean
+  /** 媒体是受保护的（录音笔 / GPASS 节目）：必须走收听会话，直链 404 */
+  isProtectedAudio: boolean
   mediaType: string
   isFm: boolean
   mediaId: string | null
@@ -235,7 +240,10 @@ export async function fetchRadioDetail(id: string): Promise<RadioDetail> {
 
   const mediaIds = (rel.media?.data as { id: string } | { id: string }[] | undefined) ?? []
   const mediaId = Array.isArray(mediaIds) ? mediaIds[0]?.id : mediaIds?.id
-  const media = mediaId ? lookup.get(`media:${mediaId}`) : undefined
+  // 坑：media 资源在 included 里的 type 是复数 "medias"，不是关系名 "media"。
+  // 查错了 key 会永远查不到 → mediaType 退回 'audio' → 把 protected_audio
+  // 当成免费直链去拼 alioss（而录音笔这类会员音频并不在 alioss），播放必挂。
+  const media = mediaId ? (lookup.get(`medias:${mediaId}`) ?? lookup.get(`media:${mediaId}`)) : undefined
   const mediaType = ((media?.attributes as MediaAttrs | undefined)?.['media-type'] as string) ?? 'audio'
 
   const timelines: Timeline[] = included
@@ -267,6 +275,9 @@ export async function fetchRadioDetail(id: string): Promise<RadioDetail> {
     plays: r.attributes.plays ?? 0,
     isFree: r.attributes['is-free'],
     isRequirePrivilege: r.attributes['is-require-privilege'],
+    // 录音笔这类节目本体是「限免」（is-free=true），但媒体仍是 protected_audio，
+    // 直链 404。所以不能拿 is-free 当「能不能直连播」用，必须看媒体的 media-type。
+    isProtectedAudio: mediaType === 'protected_audio',
     mediaType,
     isFm: Boolean(r.attributes['is-fm']),
     categories: catIds.map((id) => {

@@ -11,7 +11,7 @@ export function toTrack(r: RadioListItem, audioFile?: string | null): Track {
     title: r.title,
     cover: coverUrl(r.cover, 400),
     duration: r.duration,
-    mediaType: r.isFree ? 'audio' : 'protected_audio',
+    mediaType: r.isProtectedAudio ? 'protected_audio' : 'audio',
     audioFile: audioFile ?? null,
     playback: r.playbackType,
     djs: r.djs.map((d) => d.nickname),

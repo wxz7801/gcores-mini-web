@@ -161,7 +161,7 @@ export function RadioDetailPage() {
                     <path d="M7 4l14 8-14 8z" />
                   </svg>
                   {isCurrent ? '继续播放' : '立即收听'}
-                  {detail.isRequirePrivilege && !detail.isFree && (
+                  {detail.isRequirePrivilege && (
                     <span className="ml-1 rounded bg-black/25 px-1.5 py-0.5 text-[12px]">GPASS</span>
                   )}
                 </>
@@ -226,6 +226,7 @@ function toTrackFromDetail(d: RadioDetail) {
     playbackType: d.isFm ? 'hls' : 'file',
     isFm: d.isFm,
     isImported: false,
+    isProtectedAudio: d.isProtectedAudio,
     mediaId: d.mediaId ?? null,
     audioFile: d.audioFile ?? null,
     categories: d.categories,
