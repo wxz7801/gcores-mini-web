@@ -54,7 +54,7 @@ function StagePanel() {
   const openDetail = () => navigate(`/radio/${current.radioId}`)
 
   return (
-    <div className="stage-interactive flex h-full flex-col px-4 pt-4 pb-3">
+    <div className="@container stage-interactive flex h-full flex-col px-4 pt-4 pb-3">
       {/* 上：大封面（点进节目详情，时间轴在详情页里） */}
       <div
         role="button"
@@ -67,10 +67,12 @@ function StagePanel() {
             openDetail()
           }
         }}
-        className="group flex min-h-0 flex-1 flex-col focus:outline-none"
+        className="group my-auto flex min-h-0 flex-col focus:outline-none"
         style={{ cursor: 'pointer' }}
       >
-        <div className="relative flex min-h-0 flex-1 items-center justify-center">
+        {/* 封面按栏宽等比封顶（栏宽 372 → 约 264px 高，和常见方图的边长差不多），
+            不再用 flex-1 把封面拽满整栏 */}
+        <div className="relative flex items-center justify-center" style={{ height: '71cqw', maxHeight: '100%' }}>
           {/* 按封面真实宽高比放大到可用区域（不裁切、不拉伸），竖版/方图/横版都保持原样。
               父容器是 flex 项，直接给 img 百分比高度会被撑破，所以用绝对定位兜住 */}
           <CoverImage
@@ -86,65 +88,66 @@ function StagePanel() {
             {current.category ? ` · ${current.category}` : ''}
           </div>
         </div>
-      </div>
 
-      {/* 下：进度 + 控制栏（对齐机核 App 播放条） */}
-      <div className="mt-3 shrink-0">
-        <div className="mb-1 flex items-center justify-between font-mono text-[13px] tabular-nums text-on-surface-variant">
-          <span className="text-on-surface">{formatTime(position)}</span>
-          <span>{formatTime(total)}</span>
-        </div>
-        <StageSeekBar pct={pct} position={position} total={total} onSeek={seek} />
-
-        <div className="mt-2 grid grid-cols-5 items-center">
-          <IconBtn label="后退 15 秒" onClick={() => skip(-15)}>
-            <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
-              <path d="M12 5a7 7 0 1 1-6.5 4.5" />
-              <path d="M4 4.5V9h4.5" />
-              <text x="12" y="15.5" textAnchor="middle" fontSize="7" fill="currentColor" stroke="none">15</text>
-            </svg>
-          </IconBtn>
-          <IconBtn label="上一集" onClick={prev}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 5l-10 7 10 7z" />
-              <rect x="5" y="5" width="2.5" height="14" rx="1" />
-            </svg>
-          </IconBtn>
-          <div className="flex items-center justify-center">
-            <button
-              type="button"
-              onClick={toggle}
-              aria-label={playing ? '暂停' : '播放'}
-              className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-primary text-on-primary hover:brightness-110 active:brightness-95"
-            >
-              {playing ? (
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="6" y="4" width="4.5" height="16" rx="1" />
-                  <rect x="13.5" y="4" width="4.5" height="16" rx="1" />
-                </svg>
-              ) : (
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 4l13 8-13 8z" />
-                </svg>
-              )}
-            </button>
+        {/* 进度 + 控制栏（对齐机核 App 播放条）：跟随封面组一起居中，
+            不再 mt-auto 顶到栏目最底 */}
+          <div className="mt-3 shrink-0">
+          <div className="mb-1 flex items-center justify-between font-mono text-[13px] tabular-nums text-on-surface-variant">
+            <span className="text-on-surface">{formatTime(position)}</span>
+            <span>{formatTime(total)}</span>
           </div>
-          <IconBtn label="下一集" onClick={next}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M5 5l10 7-10 7z" />
-              <rect x="16.5" y="5" width="2.5" height="14" rx="1" />
-            </svg>
-          </IconBtn>
-          <IconBtn label="前进 15 秒" onClick={() => skip(15)}>
-            <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
-              <path d="M12 5a7 7 0 1 0 6.5 4.5" />
-              <path d="M20 4.5V9h-4.5" />
-              <text x="12" y="15.5" textAnchor="middle" fontSize="7" fill="currentColor" stroke="none">15</text>
-            </svg>
-          </IconBtn>
-        </div>
+          <StageSeekBar pct={pct} position={position} total={total} onSeek={seek} />
 
-        {loading && <div className="mt-1 text-center text-[12px] text-on-surface-variant">缓冲中…</div>}
+          <div className="mt-2 grid grid-cols-5 items-center">
+            <IconBtn label="后退 15 秒" onClick={() => skip(-15)}>
+              <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
+                <path d="M12 5a7 7 0 1 1-6.5 4.5" />
+                <path d="M4 4.5V9h4.5" />
+                <text x="12" y="15.5" textAnchor="middle" fontSize="7" fill="currentColor" stroke="none">15</text>
+              </svg>
+            </IconBtn>
+            <IconBtn label="上一集" onClick={prev}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 5l-10 7 10 7z" />
+                <rect x="5" y="5" width="2.5" height="14" rx="1" />
+              </svg>
+            </IconBtn>
+            <div className="flex items-center justify-center">
+              <button
+                type="button"
+                onClick={toggle}
+                aria-label={playing ? '暂停' : '播放'}
+                className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-primary text-on-primary hover:brightness-110 active:brightness-95"
+              >
+                {playing ? (
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="6" y="4" width="4.5" height="16" rx="1" />
+                    <rect x="13.5" y="4" width="4.5" height="16" rx="1" />
+                  </svg>
+                ) : (
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 4l13 8-13 8z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+            <IconBtn label="下一集" onClick={next}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M5 5l10 7-10 7z" />
+                <rect x="16.5" y="5" width="2.5" height="14" rx="1" />
+              </svg>
+            </IconBtn>
+            <IconBtn label="前进 15 秒" onClick={() => skip(15)}>
+              <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
+                <path d="M12 5a7 7 0 1 0 6.5 4.5" />
+                <path d="M20 4.5V9h-4.5" />
+                <text x="12" y="15.5" textAnchor="middle" fontSize="7" fill="currentColor" stroke="none">15</text>
+              </svg>
+            </IconBtn>
+          </div>
+
+          {loading && <div className="mt-1 text-center text-[12px] text-on-surface-variant">缓冲中…</div>}
+        </div>
       </div>
     </div>
   )
