@@ -28,10 +28,8 @@ export function FloatingNav() {
       aria-label="主导航"
       className={cn(
         'fixed z-40 flex items-stretch gap-1 border-t border-outline-variant bg-surface-container',
-        // 横屏：钉在内容区底部（屏幕中线到右边缘），让开左侧舞台；播放控制已经在舞台的封面下面，
-        // 这里只留导航，不再盖住舞台右下角。
         wide
-          ? 'bottom-0 right-0 w-[480px] max-w-[calc(100%-var(--dead-zone))] rounded-tl-xl px-2'
+          ? 'bottom-0 left-1/2 w-[480px] max-w-[52vw] -translate-x-1/2 rounded-t-xl px-2'
           : 'bottom-[calc(64px+env(safe-area-inset-bottom))] left-1/2 w-[calc(100%-24px)] max-w-[500px] -translate-x-1/2 rounded-xl border px-1.5',
       )}
     >
