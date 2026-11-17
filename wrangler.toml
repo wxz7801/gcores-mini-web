@@ -8,8 +8,11 @@
 #   - run_worker_first  : true，所有请求先进 Worker（HTML 需要注入运行时变量）
 #   - not_found_handling: SPA 深链（/radio/123）回退到 index.html
 #
-# 运行时变量：show_fm_list（true 显示 / false 隐藏「历史FM」列表）在 Dashboard 配置，不写进本文件，
-#   以免 deploy 时覆盖线上值；本地 wrangler dev 用 .dev.vars 模拟（已 gitignore）。
+# 运行时变量：show_fm_list（true 显示 / false 隐藏「历史FM」列表）在 Dashboard 配置，不写进本文件。
+#   关键：必须 keep_vars = true。否则 Workers Builds 跑的 `wrangler deploy` 会把
+#   Dashboard 里设的变量当作「本地配置没有」而清掉（wrangler 默认以本文件为唯一事实来源）。
+#   keep_vars = true 让 deploy 保留 Dashboard 上、本文件未声明的变量——正是「值由 Dashboard 管」想要的。
+#   本地 wrangler dev 用 .dev.vars 模拟（已 gitignore）。
 #
 # 为什么不用 Pages 的 pages_build_output_dir：
 #   Cloudflare 的 Workers Builds 执行的是 `npx wrangler deploy`，
@@ -26,6 +29,8 @@
 name = "gcores-mini-web"
 main = "worker/index.js"
 compatibility_date = "2026-11-09"
+# 保留 Dashboard 上配置、本文件未声明的变量（如 show_fm_list），deploy 不清掉它们
+keep_vars = true
 
 [assets]
 directory = "apps/web/dist"
