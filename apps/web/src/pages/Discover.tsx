@@ -136,8 +136,9 @@ export function DiscoverPage() {
     <div className="pb-6">
       <PageHeader>
         <div className="flex items-center gap-2 px-4">
-          <h1 className="flex-1 text-[28px] leading-none font-bold text-on-surface">播客</h1>
+          <h1 className="shrink-0 text-[28px] leading-none font-bold text-on-surface">播客</h1>
           <FmLiveButton />
+          <div className="flex-1" />
           <button
             type="button"
             onClick={() => nav('/search')}

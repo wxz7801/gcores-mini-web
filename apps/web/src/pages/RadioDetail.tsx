@@ -46,6 +46,13 @@ export function RadioDetailPage() {
 
   const detail = q.data
   const isCurrent = current?.radioId === detail?.id
+  // FM 是按墙钟循环的伪直播连续流，没有「按章节跳转」的意义，详情页不显示时间轴
+  const isFm = Boolean(detail?.isFm)
+
+  // 从别的节目（停在时间轴页签）切到 FM 时，把页签拉回简介，避免渲染出时间轴
+  useEffect(() => {
+    if (isFm && tabState === 'timeline') setTab('intro')
+  }, [isFm, tabState])
 
 
   // 时间轴单独按 mediaId 取：详情接口的 include 不稳定，media 路由最可靠
@@ -54,10 +61,10 @@ export function RadioDetailPage() {
   // 一旦拿到章节就默认落在「时间轴」页签（机核自制节目基本都有）
   const [autoTabbed, setAutoTabbed] = useState(false)
   useEffect(() => {
-    if (autoTabbed || !timelines.length) return
+    if (autoTabbed || !timelines.length || isFm) return
     setAutoTabbed(true)
     setTab('timeline')
-  }, [autoTabbed, timelines.length])
+  }, [autoTabbed, timelines.length, isFm])
 
   // 收藏状态：从「我的收藏」里找这一期（收藏接口没有按资源查询的入口）
   const qc = useQueryClient()
@@ -183,7 +190,7 @@ export function RadioDetailPage() {
           <div className="mt-3 flex shrink-0 gap-1 border-b border-outline-variant bg-surface-container-low px-3 pt-1">
             {(
               [
-                ...(timelines.length ? [{ id: 'timeline' as Tab, label: '时间轴' }] : []),
+                ...(!isFm && timelines.length ? [{ id: 'timeline' as Tab, label: '时间轴' }] : []),
                 { id: 'intro' as Tab, label: '简介' },
                 { id: 'comments' as Tab, label: `评论 ${detail.comments || ''}` },
               ]
@@ -205,7 +212,7 @@ export function RadioDetailPage() {
             ))}
           </div>
 
-          {tab === 'timeline' && (
+          {tab === 'timeline' && !isFm && (
             <TimelineList timelines={timelines} onJump={(sec) => (isCurrent ? seek(sec) : onPlay())} />
           )}
           {tab === 'intro' && (
