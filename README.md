@@ -183,7 +183,7 @@ run_worker_first = true                          # 所有请求先进 Worker（H
 
 代理层已经处理的细节：剥掉浏览器带来的 `Origin` / `Referer` 并替换成 `https://www.gcores.com`（否则上游按跨域处理）；剥掉 `cf-connecting-ip`、`x-forwarded-*` 等边缘注入头；响应侧剥掉上游的 `access-control-*`、`content-encoding`、`content-length`、`set-cookie` 并重新计算；`redirect: 'manual'`，上游 302 的绝对地址改写为同源相对路径，避免把登录页 HTML 当 JSON 返回。
 
-**运行时变量 `show_fm`（是否显示机核 FM）**：`1` 显示、`0` 隐藏，未设置默认显示。在 Dashboard → Worker → Settings → Variables and Secrets 添加文本变量 `show_fm`，改完即时生效，**不用重新构建**——Worker 会把它注入 index.html 的 `window.__GCORES_CONFIG__`，前端 `lib/config.ts` 读取。隐藏时首页 FM 页签消失，「最新 / 机核 / 入驻」信息流里的 FM 节目也一并摘掉。本地开发对应仓库根 `.env` 里的 `show_fm`（vite dev 用）；本地 `wrangler dev` 用 `.dev.vars` 写 `show_fm=0` 模拟。注意变量不要写进 `wrangler.toml` 的 `[vars]`，否则每次 deploy 会覆盖 Dashboard 上的值。
+**运行时变量 `show_fm`（是否显示机核 FM）**：`true` 显示、`false` 隐藏，未设置默认显示。在 Dashboard → Worker → Settings → Variables and Secrets 添加文本变量 `show_fm`，改完即时生效，**不用重新构建**——Worker 会把它注入 index.html 的 `window.__GCORES_CONFIG__`，前端 `lib/config.ts` 读取。隐藏时首页 FM 页签消失，「最新 / 机核 / 入驻」信息流里的 FM 节目也一并摘掉。本地开发对应仓库根 `.env` 里的 `show_fm`（vite dev 用）；本地 `wrangler dev` 用 `.dev.vars` 写 `show_fm=false` 模拟。注意变量不要写进 `wrangler.toml` 的 `[vars]`，否则每次 deploy 会覆盖 Dashboard 上的值。
 
 本地验证（`wrangler dev`，会真实连机核 API）：
 

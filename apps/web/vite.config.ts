@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
   // 生产环境这个值由 Worker 从 Cloudflare 运行时变量注入（见 worker/index.js），
   // 这里只服务本地 vite dev。
   const env = loadEnv(mode, resolve(__dirname, '../..'), '')
-  const showFm = (env.show_fm ?? '1').trim()
+  const showFm = (env.show_fm ?? 'true').trim()
 
   return {
     plugins: [react(), tailwindcss()],

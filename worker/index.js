@@ -110,7 +110,7 @@ async function proxyToUpstream(request) {
 
 /**
  * 把 Cloudflare 运行时变量注入 HTML（SPA 外壳），前端 lib/config.ts 读取。
- * show_fm：1 显示 / 0 隐藏机核 FM，未设置默认显示。改 Dashboard 变量即时生效，无需重新构建。
+ * show_fm：true 显示 / false 隐藏机核 FM，未设置默认显示。改 Dashboard 变量即时生效，无需重新构建。
  * 只改写 text/html；JS/CSS/图片等静态资源原样透传。
  * @param {Request} request
  * @param {Response} res
@@ -120,7 +120,7 @@ async function injectRuntimeConfig(request, res, env) {
   const type = res.headers.get('content-type') || ''
   if (request.method !== 'GET' || !type.includes('text/html')) return res
 
-  const showFm = String(env.show_fm ?? '1').trim() !== '0'
+  const showFm = String(env.show_fm ?? 'true').trim().toLowerCase() !== 'false'
   const html = await res.text()
   if (!html.includes('<head>')) return new Response(html, { status: res.status, headers: res.headers })
 
