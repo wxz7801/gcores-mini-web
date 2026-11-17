@@ -7,6 +7,7 @@ import {
   startListeningSession,
 } from '../api/gcores'
 import { request } from '../api/client'
+import { SKIP_SECONDS } from '../lib/format'
 
 export interface Track {
   radioId: string
@@ -338,13 +339,22 @@ function setMediaSession(track: Track) {
   }
 }
 
+/** 把播放状态同步给系统媒体控制（车机外部控制栏 / 锁屏 / 通知栏）。
+ *  必须跟着音频元素的真实状态走：规范规定页面一旦声明 playing，浏览器就不再
+ *  从元素推断状态——只在开播时写一次的话，外部控制栏会永远停在「播放中」。 */
+function syncPlaybackState() {
+  if (!('mediaSession' in navigator)) return
+  navigator.mediaSession.playbackState = getAudio().paused ? 'paused' : 'playing'
+}
+
 function bindMediaSessionActions() {
   if (!('mediaSession' in navigator)) return
   const ms = navigator.mediaSession
   ms.setActionHandler('play', () => void usePlayer.getState().toggle())
   ms.setActionHandler('pause', () => void usePlayer.getState().toggle())
-  ms.setActionHandler('seekbackward', () => usePlayer.getState().skip(-15))
-  ms.setActionHandler('seekforward', () => usePlayer.getState().skip(30))
+  // 与页面内按钮 / 键盘方向键保持同一秒数（图标上印的也是 10）
+  ms.setActionHandler('seekbackward', () => usePlayer.getState().skip(-SKIP_SECONDS))
+  ms.setActionHandler('seekforward', () => usePlayer.getState().skip(SKIP_SECONDS))
   ms.setActionHandler('previoustrack', () => usePlayer.getState().prev())
   ms.setActionHandler('nexttrack', () => usePlayer.getState().next())
 }
@@ -367,8 +377,14 @@ export const usePlayer = create<PlayerState>((set, get) => {
     el.addEventListener('durationchange', () => {
       if (Number.isFinite(el.duration)) set({ duration: el.duration })
     })
-    el.addEventListener('play', () => set({ playing: true }))
-    el.addEventListener('pause', () => set({ playing: false }))
+    el.addEventListener('play', () => {
+      set({ playing: true })
+      syncPlaybackState()
+    })
+    el.addEventListener('pause', () => {
+      set({ playing: false })
+      syncPlaybackState()
+    })
     el.addEventListener('waiting', () => set({ loading: true }))
     el.addEventListener('playing', () => set({ loading: false }))
     el.addEventListener('ended', () => {
@@ -431,7 +447,7 @@ export const usePlayer = create<PlayerState>((set, get) => {
         const el = getAudio()
         await el.play()
         setMediaSession(track)
-        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing'
+        syncPlaybackState()
         lastTrack = track
         lastPosition = el.currentTime || 0
         persistLast()
