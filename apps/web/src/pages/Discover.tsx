@@ -13,16 +13,18 @@ import { FmSection } from '../components/FmSection'
 import { SeriesTile } from '../components/SeriesTile'
 import { RECORDER_SEASON_IDS } from '../api/series'
 import { PageHeader } from '../components/AppShell'
-
-const TABS = [
-  { id: 'latest' as const, label: '最新' },
-  { id: 'gcores' as const, label: '机核' },
-  { id: 'imported' as const, label: '入驻' },
-  { id: 'gpass' as const, label: 'GPASS' },
-  { id: 'fm' as const, label: '机核 FM' },
-]
+import { SHOW_FM } from '../lib/config'
 
 type Tab = 'latest' | 'gcores' | 'imported' | 'gpass' | 'fm'
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'latest', label: '最新' },
+  { id: 'gcores', label: '机核' },
+  { id: 'imported', label: '入驻' },
+  { id: 'gpass', label: 'GPASS' },
+  // show_fm=0 时整个 FM 入口不出现（Cloudflare 运行时变量 / 根 .env，见 lib/config.ts）
+  ...(SHOW_FM ? [{ id: 'fm' as const, label: '机核 FM' }] : []),
+]
 
 /** GPASS 会员专享：接口不支持按权限过滤（filter[is-free] → 400），只能在客户端分流，所以要更深的翻页 */
 function isGpass(r: RadioListItem) {
@@ -118,12 +120,14 @@ export function DiscoverPage() {
   )
 
   const all: RadioListItem[] = q.data?.pages.flatMap((p) => p.items) ?? []
+  // 隐藏 FM 时，信息流里的 FM 节目也一并摘掉，不然「最新」里还会漏出来
+  const visible = useMemo(() => (SHOW_FM ? all : all.filter((r) => !r.isFm)), [all])
   const items = useMemo(() => {
     if (tab === 'fm' || tab === 'gpass') return []
-    if (tab === 'latest') return all
-    if (tab === 'gcores') return all.filter((r) => !r.isImported)
-    return all.filter((r) => r.isImported)
-  }, [all, tab])
+    if (tab === 'latest') return visible
+    if (tab === 'gcores') return visible.filter((r) => !r.isImported)
+    return visible.filter((r) => r.isImported)
+  }, [visible, tab])
 
 
   return (
@@ -243,7 +247,7 @@ export function DiscoverPage() {
         </>
       ) : (
         <div className="mt-1">
-          <RadioGrid items={items} queue={all} />
+          <RadioGrid items={items} queue={visible} />
         </div>
       )}
 

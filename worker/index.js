@@ -4,9 +4,8 @@
 // 前端 api/client.ts 的 BASE 是 '/gapi/v1'，只要部署在同域就能直接用。
 //
 // 架构说明（Workers + Static Assets）：
-//   wrangler.toml 里 [assets].run_worker_first = ["/gapi/*"]，
-//   因此只有 /gapi/* 会进入这个 Worker，其余请求（静态文件、SPA 深链）由 assets 直接处理。
-//   进来之后仍然再判一次前缀，作为兜底。
+//   wrangler.toml 里 [assets].run_worker_first = true，所有请求都先进这个 Worker：
+//   /gapi/* 走反向代理；HTML（SPA 外壳）注入运行时配置（show_fm 等）；其余原样交给 assets。
 //
 // 注意：workers runtime 的 fetch 会自动补齐 Origin / Referer 等头，
 // 直接透传浏览器的 Origin 会让上游把它当成跨域请求，所以这里显式覆盖成机核自己的值。
@@ -109,22 +108,51 @@ async function proxyToUpstream(request) {
   })
 }
 
+/**
+ * 把 Cloudflare 运行时变量注入 HTML（SPA 外壳），前端 lib/config.ts 读取。
+ * show_fm：1 显示 / 0 隐藏机核 FM，未设置默认显示。改 Dashboard 变量即时生效，无需重新构建。
+ * 只改写 text/html；JS/CSS/图片等静态资源原样透传。
+ * @param {Request} request
+ * @param {Response} res
+ * @param {{ show_fm?: string }} env
+ */
+async function injectRuntimeConfig(request, res, env) {
+  const type = res.headers.get('content-type') || ''
+  if (request.method !== 'GET' || !type.includes('text/html')) return res
+
+  const showFm = String(env.show_fm ?? '1').trim() !== '0'
+  const html = await res.text()
+  if (!html.includes('<head>')) return new Response(html, { status: res.status, headers: res.headers })
+
+  const headers = new Headers(res.headers)
+  // 正文被改写过：原来的长度 / 编码 / etag 不再成立；也不让缓存留住旧配置
+  headers.delete('content-length')
+  headers.delete('content-encoding')
+  headers.delete('etag')
+  headers.set('cache-control', 'no-cache')
+  const snippet = `<script>window.__GCORES_CONFIG__={"showFm":${showFm}};</script>`
+  return new Response(html.replace('<head>', '<head>' + snippet), {
+    status: res.status,
+    statusText: res.statusText,
+    headers,
+  })
+}
+
 export default {
   /**
    * @param {Request} request
-   * @param {{ ASSETS: { fetch: (r: Request) => Promise<Response> } }} env
+   * @param {{ ASSETS: { fetch: (r: Request) => Promise<Response> }, show_fm?: string }} env
    * @param {ExecutionContext} ctx
    */
   async fetch(request, env, ctx) {
     const url = new URL(request.url)
 
-    // run_worker_first 已保证只有 /gapi/* 进来，这里再判一次作兜底
     if (url.pathname.startsWith('/gapi/')) {
       return proxyToUpstream(request)
     }
 
-    // 其余一律交给静态资源（含 SPA 深链回退，由 not_found_handling 决定）
-    if (env?.ASSETS) return env.ASSETS.fetch(request)
+    // 其余交给静态资源（含 SPA 深链回退，由 not_found_handling 决定），HTML 顺带注入运行时配置
+    if (env?.ASSETS) return injectRuntimeConfig(request, await env.ASSETS.fetch(request), env)
     return new Response('Not found', { status: 404 })
   },
 }

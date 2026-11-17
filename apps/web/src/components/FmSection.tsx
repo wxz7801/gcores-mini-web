@@ -6,6 +6,7 @@ import { CoverImage } from '../components/CoverImage'
 import { coverUrl, formatTime, relativeDate, cn } from '../lib/format'
 import { usePlayer } from '../store/player'
 import { toTrack } from '../components/RadioRow'
+import { SHOW_FM } from '../lib/config'
 
 /**
  * 机核 FM：和普通播客同一个接口（/radios?filter[is-fm]=1），
@@ -18,10 +19,12 @@ export function FmSection() {
   const q = useQuery({
     queryKey: ['fm'],
     queryFn: () => fetchRadios({ isFm: true, limit: 24, sort: '-published-at' }),
+    enabled: SHOW_FM,
     staleTime: 10 * 60 * 1000,
   })
   const items = useMemo(() => q.data?.items ?? [], [q.data])
 
+  if (!SHOW_FM) return null
   if (q.isLoading) return <div className="px-4 py-6 text-[15px] text-on-surface-variant">机核 FM 加载中…</div>
   if (!items.length) return null
 
