@@ -11,7 +11,7 @@ export interface RadioAttrs {
   duration: number
   cover: string
   thumb: string
-  'published-at': number
+  'published-at': string
   'likes-count': number
   'comments-count': number
   plays: number
@@ -62,7 +62,7 @@ export interface AlbumAttrs {
   credit: number
   'chapters-count'?: number
   'radios-count'?: number
-  'published-at'?: number
+  'published-at'?: string
   'owner-type'?: string
   'subscriptions-count'?: number
   description?: string
@@ -100,6 +100,17 @@ export interface RadioListItem {
   djs: { id: string; nickname: string; avatar: string | null }[]
 }
 
+/** 接口的 published-at 是 ISO 字符串（如 2026-11-03T21:30:00.000+08:00），
+ *  统一转成 epoch 毫秒——relativeDate、排序、FM 的墙钟伪直播都按毫秒算。 */
+function toEpochMs(v: string | number | undefined | null): number {
+  if (typeof v === 'number') return v > 1e12 ? v : v * 1000
+  if (typeof v === 'string') {
+    const t = Date.parse(v)
+    return Number.isFinite(t) ? t : 0
+  }
+  return 0
+}
+
 function toRadioItem(r: JsonApiResource<RadioAttrs>, included: JsonApiResource[]): RadioListItem {
   const rel = r.relationships ?? {}
   // 注意：category 是单个对象关系，djs 是数组关系，两者形状不同
@@ -117,7 +128,7 @@ function toRadioItem(r: JsonApiResource<RadioAttrs>, included: JsonApiResource[]
     cover: r.attributes.cover,
     thumb: r.attributes.thumb,
     duration: r.attributes.duration,
-    publishedAt: r.attributes['published-at'],
+    publishedAt: toEpochMs(r.attributes['published-at']),
     likes: r.attributes['likes-count'] ?? 0,
     comments: r.attributes['comments-count'] ?? 0,
     plays: r.attributes.plays ?? 0,
@@ -272,7 +283,7 @@ export async function fetchRadioDetail(id: string): Promise<RadioDetail> {
     desc: stripHtml(r.attributes.desc) || stripHtml(r.attributes.summary),
     cover: r.attributes.cover,
     duration: r.attributes.duration,
-    publishedAt: r.attributes['published-at'],
+    publishedAt: toEpochMs(r.attributes['published-at']),
     likes: r.attributes['likes-count'] ?? 0,
     comments: r.attributes['comments-count'] ?? 0,
     plays: r.attributes.plays ?? 0,
@@ -795,7 +806,7 @@ export async function fetchAlbumDetail(albumId: string): Promise<AlbumDetail> {
     description: stripHtml(a.description ?? a.desc ?? ''),
     author: (a.author as string | undefined) ?? null,
     background: (a.background as string | undefined) ?? null,
-    publishedAt: (a['published-at'] as number | undefined) ?? 0,
+    publishedAt: toEpochMs(a['published-at']),
     subscriptions: a['subscriptions-count'] ?? 0,
     ownerType: (a['owner-type'] as string | undefined) ?? null,
   }

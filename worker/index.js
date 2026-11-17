@@ -5,7 +5,7 @@
 //
 // 架构说明（Workers + Static Assets）：
 //   wrangler.toml 里 [assets].run_worker_first = true，所有请求都先进这个 Worker：
-//   /gapi/* 走反向代理；HTML（SPA 外壳）注入运行时配置（show_fm 等）；其余原样交给 assets。
+//   /gapi/* 走反向代理；HTML（SPA 外壳）注入运行时配置（show_fm_list 等）；其余原样交给 assets。
 //
 // 注意：workers runtime 的 fetch 会自动补齐 Origin / Referer 等头，
 // 直接透传浏览器的 Origin 会让上游把它当成跨域请求，所以这里显式覆盖成机核自己的值。
@@ -110,17 +110,17 @@ async function proxyToUpstream(request) {
 
 /**
  * 把 Cloudflare 运行时变量注入 HTML（SPA 外壳），前端 lib/config.ts 读取。
- * show_fm：true 显示 / false 隐藏机核 FM，未设置默认显示。改 Dashboard 变量即时生效，无需重新构建。
+ * show_fm_list：true 显示 / false 隐藏「历史FM」列表，未设置默认显示。改 Dashboard 变量即时生效，无需重新构建。
  * 只改写 text/html；JS/CSS/图片等静态资源原样透传。
  * @param {Request} request
  * @param {Response} res
- * @param {{ show_fm?: string }} env
+ * @param {{ show_fm_list?: string }} env
  */
 async function injectRuntimeConfig(request, res, env) {
   const type = res.headers.get('content-type') || ''
   if (request.method !== 'GET' || !type.includes('text/html')) return res
 
-  const showFm = String(env.show_fm ?? 'true').trim().toLowerCase() !== 'false'
+  const showFmList = String(env.show_fm_list ?? 'true').trim().toLowerCase() !== 'false'
   const html = await res.text()
   if (!html.includes('<head>')) return new Response(html, { status: res.status, headers: res.headers })
 
@@ -130,7 +130,7 @@ async function injectRuntimeConfig(request, res, env) {
   headers.delete('content-encoding')
   headers.delete('etag')
   headers.set('cache-control', 'no-cache')
-  const snippet = `<script>window.__GCORES_CONFIG__={"showFm":${showFm}};</script>`
+  const snippet = `<script>window.__GCORES_CONFIG__={"showFmList":${showFmList}};</script>`
   return new Response(html.replace('<head>', '<head>' + snippet), {
     status: res.status,
     statusText: res.statusText,
@@ -141,7 +141,7 @@ async function injectRuntimeConfig(request, res, env) {
 export default {
   /**
    * @param {Request} request
-   * @param {{ ASSETS: { fetch: (r: Request) => Promise<Response> }, show_fm?: string }} env
+   * @param {{ ASSETS: { fetch: (r: Request) => Promise<Response> }, show_fm_list?: string }} env
    * @param {ExecutionContext} ctx
    */
   async fetch(request, env, ctx) {

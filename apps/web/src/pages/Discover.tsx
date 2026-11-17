@@ -10,10 +10,11 @@ import { RadioCard, RadioGrid } from '../components/RadioCard'
 import { getAuth } from '../api/auth'
 import { cn } from '../lib/format'
 import { FmSection } from '../components/FmSection'
+import { FmLiveButton } from '../components/FmLiveButton'
 import { SeriesTile } from '../components/SeriesTile'
 import { RECORDER_SEASON_IDS } from '../api/series'
 import { PageHeader } from '../components/AppShell'
-import { SHOW_FM } from '../lib/config'
+import { SHOW_FM_LIST } from '../lib/config'
 
 type Tab = 'latest' | 'gcores' | 'imported' | 'gpass' | 'fm'
 
@@ -22,8 +23,9 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'gcores', label: '机核' },
   { id: 'imported', label: '入驻' },
   { id: 'gpass', label: 'GPASS' },
-  // show_fm=0 时整个 FM 入口不出现（Cloudflare 运行时变量 / 根 .env，见 lib/config.ts）
-  ...(SHOW_FM ? [{ id: 'fm' as const, label: '机核 FM' }] : []),
+  // show_fm_list=false 时「历史FM」页签不出现（Cloudflare 运行时变量 / 根 .env，见 lib/config.ts）。
+  // 顶部「机核FM」直播按钮不受这个开关影响，永远显示、只播最新一期。
+  ...(SHOW_FM_LIST ? [{ id: 'fm' as const, label: '历史FM' }] : []),
 ]
 
 /** GPASS 会员专享：接口不支持按权限过滤（filter[is-free] → 400），只能在客户端分流，所以要更深的翻页 */
@@ -120,8 +122,8 @@ export function DiscoverPage() {
   )
 
   const all: RadioListItem[] = q.data?.pages.flatMap((p) => p.items) ?? []
-  // 隐藏 FM 时，信息流里的 FM 节目也一并摘掉，不然「最新」里还会漏出来
-  const visible = useMemo(() => (SHOW_FM ? all : all.filter((r) => !r.isFm)), [all])
+  // 隐藏历史FM 时，信息流里的 FM 节目也一并摘掉，不然「最新」里还会漏出来
+  const visible = useMemo(() => (SHOW_FM_LIST ? all : all.filter((r) => !r.isFm)), [all])
   const items = useMemo(() => {
     if (tab === 'fm' || tab === 'gpass') return []
     if (tab === 'latest') return visible
@@ -135,6 +137,7 @@ export function DiscoverPage() {
       <PageHeader>
         <div className="flex items-center gap-2 px-4">
           <h1 className="flex-1 text-[28px] leading-none font-bold text-on-surface">播客</h1>
+          <FmLiveButton />
           <button
             type="button"
             onClick={() => nav('/search')}

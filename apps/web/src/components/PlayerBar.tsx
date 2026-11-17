@@ -1,4 +1,4 @@
-import { usePlayer } from '../store/player'
+import { usePlayer, isFmTrack } from '../store/player'
 import { CoverImage } from './CoverImage'
 import { formatTime } from '../lib/format'
 import { Icon } from './Icon'
@@ -21,6 +21,7 @@ export function PlayerBar() {
   const setExpanded = usePlayer((s) => s.setExpanded)
 
   const pct = duration > 0 ? Math.min(100, (position / duration) * 100) : 0
+  const fm = isFmTrack(current)
 
   // 没有在播时也给一条占位条：播放条永远钉在底部，不会因为「还没播」而消失
   if (!current) {
@@ -40,9 +41,10 @@ export function PlayerBar() {
       }}
       className="relative block w-full border-t border-outline-variant bg-surface-container-high text-left"
     >
-      {/* 顶部细进度：只作为状态指示，拖动的交互留在大播放页里，免得和整条点击冲突 */}
+      {/* 顶部细进度：只作为状态指示，拖动的交互留在大播放页里，免得和整条点击冲突。
+          FM 伪直播没有「进度」概念，直接铺满一条 primary 当作直播指示。 */}
       <span className="absolute inset-x-0 top-0 h-[3px] bg-surface-variant">
-        <span className="block h-full bg-primary" style={{ width: `${pct}%` }} />
+        <span className="block h-full bg-primary" style={{ width: fm ? '100%' : `${pct}%` }} />
       </span>
       {/* 缓冲提示挂在进度条上（原来挤在时间行里，会把「00:12 / 25:41」顶掉） */}
       {loading && (
@@ -57,7 +59,7 @@ export function PlayerBar() {
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[15px] font-medium text-on-surface">{current.title}</span>
           <span className="mt-1 block truncate text-[13px] text-on-surface-variant">
-            {formatTime(position)} / {formatTime(duration || current.duration)}
+            {fm ? '直播中 · 机核FM' : `${formatTime(position)} / ${formatTime(duration || current.duration)}`}
           </span>
         </span>
         {/* 主操作 = M3 filled icon button；次操作 = standard icon button */}

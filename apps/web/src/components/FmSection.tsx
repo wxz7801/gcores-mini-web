@@ -6,36 +6,33 @@ import { CoverImage } from '../components/CoverImage'
 import { coverUrl, formatTime, relativeDate, cn } from '../lib/format'
 import { usePlayer } from '../store/player'
 import { toTrack } from '../components/RadioRow'
-import { SHOW_FM } from '../lib/config'
+import { SHOW_FM_LIST } from '../lib/config'
 
 /**
- * 机核 FM：和普通播客同一个接口（/radios?filter[is-fm]=1），
- * 区别是 media 为 HLS 分片流（playback-type: hls、audio 是 .m3u8），必须走 hls.js。
+ * 历史FM：机核 FM 的往期特辑（和普通播客同一个接口 /radios?filter[is-fm]=1，
+ * media 为 HLS 分片流，走 hls.js）。每一期都按各自发布时间做墙钟伪直播循环。
  *
- * 只有 8 期（1 期正片 + 7 张特辑），所以不做「主卡 + 横排特辑」那种两层结构：
- * 直接一列全部摊开，点哪个播哪个，也就不用再有一个单独的 FM 页面。
+ * 是否露出由运行时变量 show_fm_list 控制（见 lib/config.ts）。
+ * 顶部的「机核FM」直播按钮（只播最新一期）不受这个开关影响，见 FmLiveButton。
  */
 export function FmSection() {
   const q = useQuery({
     queryKey: ['fm'],
     queryFn: () => fetchRadios({ isFm: true, limit: 24, sort: '-published-at' }),
-    enabled: SHOW_FM,
+    enabled: SHOW_FM_LIST,
     staleTime: 10 * 60 * 1000,
   })
   const items = useMemo(() => q.data?.items ?? [], [q.data])
 
-  if (!SHOW_FM) return null
-  if (q.isLoading) return <div className="px-4 py-6 text-[15px] text-on-surface-variant">机核 FM 加载中…</div>
+  if (!SHOW_FM_LIST) return null
+  if (q.isLoading) return <div className="px-4 py-6 text-[15px] text-on-surface-variant">历史FM 加载中…</div>
   if (!items.length) return null
 
   return (
     <section>
       <div className="mb-3 px-4">
-        <h2 className="flex items-center gap-2 text-[20px] font-bold text-on-surface">
-          机核 FM
-          <span className="rounded-md bg-error-container px-1.5 py-0.5 text-[12px] leading-none font-medium text-on-error-container">LIVE</span>
-        </h2>
-        <p className="mt-1 text-[13px] text-on-surface-variant">循环陪伴流 · HLS 分片 · 共 {items.length} 期</p>
+        <h2 className="flex items-center gap-2 text-[20px] font-bold text-on-surface">历史FM</h2>
+        <p className="mt-1 text-[13px] text-on-surface-variant">往期特辑 · 循环播放 · 共 {items.length} 期</p>
       </div>
       <ul className="space-y-2 px-4">
         {items.map((r, i) => (
@@ -85,9 +82,6 @@ function FmRow({ radio, queue, first }: { radio: RadioListItem; queue: RadioList
           <span>{formatTime(radio.duration)}</span>
           <span>·</span>
           <span>{relativeDate(radio.publishedAt)}</span>
-          {first && (
-            <span className="rounded bg-error-container px-1 py-px text-[11px] leading-none text-on-error-container">陪伴流</span>
-          )}
         </div>
       </button>
       <button

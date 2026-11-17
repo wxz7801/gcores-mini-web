@@ -1,16 +1,32 @@
 import { useState } from 'react'
-import { usePlayer } from '../store/player'
+import { usePlayer, isFmTrack } from '../store/player'
 import { formatTime, SKIP_SECONDS } from '../lib/format'
 import { Icon } from './Icon'
 
 /** 图标钮：命中区 56px，圆形，M3 的 state layer 只用 8% / 10% 两档 */
-function IconBtn({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
+function IconBtn({
+  label,
+  onClick,
+  children,
+  disabled = false,
+}: {
+  label: string
+  onClick: () => void
+  children: React.ReactNode
+  disabled?: boolean
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       aria-label={label}
-      className="mx-auto flex h-14 w-14 items-center justify-center rounded-full text-on-surface-variant hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
+      aria-disabled={disabled || undefined}
+      className={
+        disabled
+          ? 'mx-auto flex h-14 w-14 items-center justify-center rounded-full text-on-surface-variant opacity-30'
+          : 'mx-auto flex h-14 w-14 items-center justify-center rounded-full text-on-surface-variant hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]'
+      }
     >
       {children}
     </button>
@@ -40,17 +56,31 @@ export function PlayerControls({ className = '', seekHeight = 56 }: PlayerContro
 
   const total = duration || current?.duration || 0
   const pct = total > 0 ? Math.min(100, (position / total) * 100) : 0
+  // FM 伪直播：隐藏进度/时间（对齐官网 canSeek:false），±10 禁用，只留 上一集/播放/下一集
+  const fm = isFmTrack(current)
 
   return (
     <div className={className}>
-      <div className="mb-1 flex items-center justify-between font-mono text-[13px] tabular-nums text-on-surface-variant">
-    <span className="text-on-surface">{formatTime(position)}</span>
-    <span>{formatTime(total)}</span>
-    </div>
-    <StageSeekBar pct={pct} position={position} total={total} onSeek={seek} height={seekHeight} />
+      {fm ? (
+        <div className="mb-1 flex items-center justify-center gap-2 text-[13px] font-medium text-on-surface">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-error opacity-60" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-error" />
+          </span>
+          直播中 · 机核FM
+        </div>
+      ) : (
+        <>
+          <div className="mb-1 flex items-center justify-between font-mono text-[13px] tabular-nums text-on-surface-variant">
+            <span className="text-on-surface">{formatTime(position)}</span>
+            <span>{formatTime(total)}</span>
+          </div>
+          <StageSeekBar pct={pct} position={position} total={total} onSeek={seek} height={seekHeight} />
+        </>
+      )}
 
     <div className="mt-2 grid grid-cols-5 items-center">
-      <IconBtn label={`后退 ${SKIP_SECONDS} 秒`} onClick={() => skip(-SKIP_SECONDS)}>
+      <IconBtn label={`后退 ${SKIP_SECONDS} 秒`} onClick={() => skip(-SKIP_SECONDS)} disabled={fm}>
         <Icon name="replay_10" size={30} />
       </IconBtn>
       <IconBtn label="上一集" onClick={prev}>
@@ -69,7 +99,7 @@ export function PlayerControls({ className = '', seekHeight = 56 }: PlayerContro
       <IconBtn label="下一集" onClick={next}>
         <Icon name="skip_next" size={28} />
       </IconBtn>
-      <IconBtn label={`前进 ${SKIP_SECONDS} 秒`} onClick={() => skip(SKIP_SECONDS)}>
+      <IconBtn label={`前进 ${SKIP_SECONDS} 秒`} onClick={() => skip(SKIP_SECONDS)} disabled={fm}>
         <Icon name="forward_10" size={30} />
       </IconBtn>
     </div>

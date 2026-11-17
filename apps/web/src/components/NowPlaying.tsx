@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { usePlayer } from '../store/player'
+import { usePlayer, isFmTrack } from '../store/player'
 import { useWideLandscape } from '../hooks/useLayout'
 import { cn, formatTime, SKIP_SECONDS } from '../lib/format'
 import { CoverImage } from './CoverImage'
@@ -62,6 +62,8 @@ export function NowPlaying() {
 
   if (!expanded || !current) return null
 
+  // FM 伪直播：隐藏进度/时间、禁 ±10、倍速锁 1、不显示时间轴入口（对齐官网 canSeek:false）
+  const fm = isFmTrack(current)
 
   const total = duration || current.duration || 0
   const shown = drag ?? position
@@ -135,17 +137,28 @@ export function NowPlaying() {
               {current.djs?.length ? current.djs.join(' · ') : ''}
               {current.category ? (current.djs?.length ? ' · ' : '') + current.category : ''}
             </span>
-            <Link
-              to={`/radio/${current.radioId}`}
-              onClick={() => setExpanded(false)}
-              className="flex h-11 shrink-0 items-center rounded-full bg-secondary-container px-4 text-[15px] font-medium text-on-secondary-container hover:brightness-110 active:brightness-95"
-            >
-              时间轴 ›
-            </Link>
+            {!fm && (
+              <Link
+                to={`/radio/${current.radioId}`}
+                onClick={() => setExpanded(false)}
+                className="flex h-11 shrink-0 items-center rounded-full bg-secondary-container px-4 text-[15px] font-medium text-on-secondary-container hover:brightness-110 active:brightness-95"
+              >
+                时间轴 ›
+              </Link>
+            )}
           </div>
         </div>
 
-        {/* 进度条：整条 40px 高，触摸命中区足够 */}
+        {/* 进度条：整条 40px 高，触摸命中区足够。FM 伪直播不可拖动，换成「直播中」指示 */}
+        {fm ? (
+          <div className="mt-2 flex h-14 items-center justify-center gap-2 text-[15px] font-medium text-on-surface">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-error opacity-60" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-error" />
+            </span>
+            直播中 · 机核FM
+          </div>
+        ) : (
         <div className="mt-2">
           <div
             ref={barRef}
@@ -178,6 +191,7 @@ export function NowPlaying() {
             <span>-{formatTime(Math.max(0, total - shown))}</span>
           </div>
         </div>
+        )}
 
         {/* 控制区 */}
         <div className="mt-3 flex items-center justify-between">
@@ -185,7 +199,11 @@ export function NowPlaying() {
             type="button"
             aria-label={`后退${SKIP_SECONDS}秒`}
             onClick={() => skip(-SKIP_SECONDS)}
-            className="flex h-16 w-16 items-center justify-center rounded-full text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
+            disabled={fm}
+            className={cn(
+              'flex h-16 w-16 items-center justify-center rounded-full text-on-surface',
+              fm ? 'opacity-30' : 'hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]',
+            )}
           >
             <Icon name="replay_10" size={34} />
           </button>
@@ -218,7 +236,11 @@ export function NowPlaying() {
             type="button"
             aria-label={`前进${SKIP_SECONDS}秒`}
             onClick={() => skip(SKIP_SECONDS)}
-            className="flex h-16 w-16 items-center justify-center rounded-full text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
+            disabled={fm}
+            className={cn(
+              'flex h-16 w-16 items-center justify-center rounded-full text-on-surface',
+              fm ? 'opacity-30' : 'hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]',
+            )}
           >
             <Icon name="forward_10" size={34} />
           </button>
@@ -229,12 +251,17 @@ export function NowPlaying() {
           <div className="relative">
             <button
               type="button"
-              onClick={() => setRateOpen((v) => !v)}
-              className="flex h-14 min-w-16 items-center justify-center rounded-xl border border-outline px-4 text-[16px] text-on-surface hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]"
+              onClick={() => !fm && setRateOpen((v) => !v)}
+              disabled={fm}
+              aria-label={fm ? '直播倍速锁定为 1 倍' : '倍速'}
+              className={cn(
+                'flex h-14 min-w-16 items-center justify-center rounded-xl border border-outline px-4 text-[16px] text-on-surface',
+                fm ? 'opacity-40' : 'hover:bg-on-surface/[0.08] active:bg-on-surface/[0.1]',
+              )}
             >
-              {rate === 1 ? '倍速' : `${rate}×`}
+              {fm ? '1×' : rate === 1 ? '倍速' : `${rate}×`}
             </button>
-            {rateOpen && (
+            {rateOpen && !fm && (
               <div className="absolute bottom-16 left-1/2 flex -translate-x-1/2 gap-1 rounded-xl bg-surface-container-high p-2 shadow-[var(--m3-elevation-2)]">
                 {RATES.map((r) => (
                   <button

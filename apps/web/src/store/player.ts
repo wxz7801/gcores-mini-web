@@ -19,6 +19,8 @@ export interface Track {
   audioFile?: string | null
   /** hls = 机核 FM 的 m3u8 分片流，需要用 hls.js 播放 */
   playback?: 'file' | 'hls'
+  /** 发布时间（epoch 毫秒）。机核 FM 用它当「开播时刻」做墙钟伪直播 */
+  publishedAt?: number
   djs?: string[]
   category?: string
   /** 时间轴挂在 media 上 */
@@ -28,6 +30,27 @@ export interface Track {
 }
 
 export type RepeatMode = 'off' | 'all' | 'one'
+
+// ---------- 机核 FM 伪直播 ----------
+// FM 不是真直播，是「超长 HLS VOD + 墙钟偏移」：把发布时间当开播时刻，
+// 用当前墙钟时间减去它、对总时长取模，得到「此刻该播到哪」。
+// 对齐官网 gc-Main 的 ei:({duration,nowMs,startedAtMs}) => (nowMs-startedAtMs)/1e3 % seconds。
+
+/** playback==='hls' 与接口的 is-fm 一一对应（见 api/gcores.ts toRadioItem） */
+export function isFmTrack(track: Track | null | undefined): boolean {
+  return Boolean(track && track.playback === 'hls')
+}
+
+/** FM 此刻的直播位置（秒）。缺发布时间 / 时长时退回 0（从头播）。 */
+export function fmLivePosition(track: Track): number {
+  if (!isFmTrack(track)) return 0
+  const startedAt = track.publishedAt ?? 0
+  const dur = track.duration
+  if (!startedAt || !Number.isFinite(dur) || dur <= 0) return 0
+  const elapsed = (Date.now() - startedAt) / 1000
+  if (elapsed < 0) return 0 // 还没开播
+  return elapsed % dur
+}
 
 // ---------- 本机点赞（接口没有点赞写入，先只存本地） ----------
 const LIKES_KEY = 'gcores.likes.v1'
@@ -94,19 +117,22 @@ async function restoreLast() {
   lastPosition = last.position
   usePlayer.setState({
     current: last.track,
-    position: last.position,
+    position: isFmTrack(last.track) ? fmLivePosition(last.track) : last.position,
     duration: last.track.duration,
     playing: false,
   })
   try {
     await loadAudio(last.track, usePlayer.getState().rate, usePlayer.getState().volume)
     const el = getAudio()
-    const seekTo = () => {
-      const real = Number.isFinite(el.duration) && el.duration > 0 ? el.duration : last.track.duration
-      if (last.position > 0 && last.position < real - 3) el.currentTime = last.position
+    // FM 伪直播不用断点续播：loadAudio 已按墙钟挂到直播位置，这里不再 seek 回旧进度
+    if (!isFmTrack(last.track)) {
+      const seekTo = () => {
+        const real = Number.isFinite(el.duration) && el.duration > 0 ? el.duration : last.track.duration
+        if (last.position > 0 && last.position < real - 3) el.currentTime = last.position
+      }
+      if (el.readyState >= 1) seekTo()
+      else el.addEventListener('loadedmetadata', seekTo, { once: true })
     }
-    if (el.readyState >= 1) seekTo()
-    else el.addEventListener('loadedmetadata', seekTo, { once: true })
     setMediaSession(last.track)
   } catch {
     /* 音频源失效时保持封面与标题，点播放再报错 */
@@ -219,17 +245,25 @@ function destroyHls() {
   }
 }
 
-/** 挂载 HLS 流。hls.js 体积不小，所以按需动态加载，不进首屏包。 */
-async function attachHls(el: HTMLAudioElement, url: string) {
+/** 挂载 HLS 流。hls.js 体积不小，所以按需动态加载，不进首屏包。
+ *  startPosition：FM 伪直播的起播位置（秒），让 hls.js 直接从对应分片开始拉。 */
+async function attachHls(el: HTMLAudioElement, url: string, startPosition = 0) {
   destroyHls()
-  // Safari / iOS 原生支持 m3u8，交给浏览器自己处理
+  // Safari / iOS 原生支持 m3u8，交给浏览器自己处理；起播位置在元数据就绪后补一次 seek
   if (el.canPlayType('application/vnd.apple.mpegurl')) {
     el.src = url
+    if (startPosition > 0) {
+      const seekOnce = () => {
+        el.currentTime = startPosition
+      }
+      if (el.readyState >= 1) seekOnce()
+      else el.addEventListener('loadedmetadata', seekOnce, { once: true })
+    }
     return
   }
   const { default: Hls } = await import('hls.js')
   if (!Hls.isSupported()) throw new Error('当前浏览器不支持 HLS 播放')
-  const instance = new Hls({ enableWorker: true, lowLatencyMode: false })
+  const instance = new Hls({ enableWorker: true, lowLatencyMode: false, startPosition })
   instance.loadSource(url)
   instance.attachMedia(el)
   hls = instance as unknown as typeof hls
@@ -250,12 +284,13 @@ async function loadAudio(track: Track, rate: number, volume: number) {
     url = await resolveFreeUrl(track)
     usePlayer.setState({ sessionId: null, tracked: false })
   }
-  if (track.playback === 'hls') await attachHls(el, url)
+  if (track.playback === 'hls') await attachHls(el, url, fmLivePosition(track))
   else {
     destroyHls()
     el.src = url
   }
-  el.playbackRate = rate
+  // FM 是墙钟伪直播：倍速一旦不为 1 就会和「此刻该播到哪」脱节，锁死 1（对齐官网）
+  el.playbackRate = isFmTrack(track) ? 1 : rate
   el.volume = volume
   return url
 }
@@ -337,6 +372,19 @@ function setMediaSession(track: Track) {
   } catch {
     /* 部分浏览器不支持 MediaMetadata */
   }
+  // FM 伪直播不允许快进快退（对齐官网 canSeek:false）：把外部控制栏的 seek 键摘掉；
+  // 普通节目则注册 ±SKIP_SECONDS。按曲目切换，避免上一首的 handler 残留。
+  try {
+    if (isFmTrack(track)) {
+      navigator.mediaSession.setActionHandler('seekbackward', null)
+      navigator.mediaSession.setActionHandler('seekforward', null)
+    } else {
+      navigator.mediaSession.setActionHandler('seekbackward', () => usePlayer.getState().skip(-SKIP_SECONDS))
+      navigator.mediaSession.setActionHandler('seekforward', () => usePlayer.getState().skip(SKIP_SECONDS))
+    }
+  } catch {
+    /* 部分浏览器不支持这两个 action */
+  }
 }
 
 /** 把播放状态同步给系统媒体控制（车机外部控制栏 / 锁屏 / 通知栏）。
@@ -352,9 +400,7 @@ function bindMediaSessionActions() {
   const ms = navigator.mediaSession
   ms.setActionHandler('play', () => void usePlayer.getState().toggle())
   ms.setActionHandler('pause', () => void usePlayer.getState().toggle())
-  // 与页面内按钮 / 键盘方向键保持同一秒数（图标上印的也是 10）
-  ms.setActionHandler('seekbackward', () => usePlayer.getState().skip(-SKIP_SECONDS))
-  ms.setActionHandler('seekforward', () => usePlayer.getState().skip(SKIP_SECONDS))
+  // seekbackward / seekforward 按曲目在 setMediaSession 里注册（FM 摘掉、普通节目 ±SKIP_SECONDS）
   ms.setActionHandler('previoustrack', () => usePlayer.getState().prev())
   ms.setActionHandler('nexttrack', () => usePlayer.getState().next())
 }
@@ -388,6 +434,13 @@ export const usePlayer = create<PlayerState>((set, get) => {
     el.addEventListener('waiting', () => set({ loading: true }))
     el.addEventListener('playing', () => set({ loading: false }))
     el.addEventListener('ended', () => {
+      const cur = get().current
+      // FM 是无限循环的伪直播：播到结尾就按墙钟重新加入，而不是切下一首
+      if (cur && isFmTrack(cur)) {
+        el.currentTime = fmLivePosition(cur)
+        void el.play()
+        return
+      }
       const { repeat } = get()
       if (repeat === 'one') {
         el.currentTime = 0
@@ -459,12 +512,24 @@ export const usePlayer = create<PlayerState>((set, get) => {
 
     toggle() {
       const el = getAudio()
-      if (!get().current) return
-      if (el.paused) void el.play()
-      else el.pause()
+      const cur = get().current
+      if (!cur) return
+      if (el.paused) {
+        // FM 暂停后再播＝重新加入直播：按墙钟重算位置，而不是从暂停处继续（对齐官网）
+        if (isFmTrack(cur)) el.currentTime = fmLivePosition(cur)
+        void el.play()
+      } else el.pause()
     },
 
     next() {
+      const cur = get().current
+      // FM 是连续直播流，没有「下一首」：重新加入直播即可
+      if (cur && isFmTrack(cur)) {
+        const el = getAudio()
+        el.currentTime = fmLivePosition(cur)
+        if (el.paused) void el.play()
+        return
+      }
       const custom = get().customQueue
       if (custom && custom.length > (get().queue === custom ? 0 : 0)) {
         const cur = get().current
@@ -494,6 +559,13 @@ export const usePlayer = create<PlayerState>((set, get) => {
     prev() {
       const { queue, index } = get()
       const el = getAudio()
+      const cur = get().current
+      // FM 是连续直播流，没有「上一首」：重新加入直播即可
+      if (cur && isFmTrack(cur)) {
+        el.currentTime = fmLivePosition(cur)
+        if (el.paused) void el.play()
+        return
+      }
       // 超过 3 秒先回到开头，符合常见播客习惯
       if (el.currentTime > 3) {
         el.currentTime = 0
@@ -505,6 +577,8 @@ export const usePlayer = create<PlayerState>((set, get) => {
     },
 
     seek(sec) {
+      // FM 伪直播禁止拖动（对齐官网 canSeek:false）
+      if (isFmTrack(get().current)) return
       const el = getAudio()
       if (!Number.isFinite(el.duration)) return
       el.currentTime = Math.min(Math.max(sec, 0), el.duration)
@@ -512,16 +586,20 @@ export const usePlayer = create<PlayerState>((set, get) => {
     },
 
     skip(delta) {
+      if (isFmTrack(get().current)) return
       const el = getAudio()
       get().seek(el.currentTime + delta)
     },
 
     setRate(rate) {
+      // FM 锁 1 倍速，防止和墙钟脱节
+      if (isFmTrack(get().current)) return
       getAudio().playbackRate = rate
       set({ rate })
     },
 
     cycleRate() {
+      if (isFmTrack(get().current)) return
       const order = [0.75, 1, 1.25, 1.5, 2]
       const next = order[(order.indexOf(get().rate) + 1) % order.length] ?? 1
       getAudio().playbackRate = next
